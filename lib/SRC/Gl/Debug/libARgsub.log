@@ -1,0 +1,4 @@
+﻿  gsub.c
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1357,5): warning MSB8012: TargetPath(D:\Temporary\CG\Trabalho_CG\lib\SRC\Gl\Debug\libARgsub.lib) does not match the Library's OutputFile property value (D:\Temporary\CG\Trabalho_CG\lib\libARgsubd.lib). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Lib.OutputFile).
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1359,5): warning MSB8012: TargetName(libARgsub) does not match the Library's OutputFile property value (libARgsubd). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Lib.OutputFile).
+  libARgsub.vcxproj -> D:\Temporary\CG\Trabalho_CG\lib\SRC\Gl\Debug\libARgsub.lib
