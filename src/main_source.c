@@ -275,7 +275,7 @@ static void init( void )
     }
 
     /* open the graphics window */
-    argInit( &cparam, 1.0, 0, 2, 1, 0 );
+    argInit( &cparam, 1.0, 0, 0, 0, 0 );
     arFittingMode   = AR_FITTING_TO_IDEAL;
     arImageProcMode = AR_IMAGE_PROC_IN_HALF;
     argDrawMode     = AR_DRAW_BY_TEXTURE_MAPPING;
