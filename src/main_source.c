@@ -35,37 +35,55 @@ ARMultiMarkerInfoT  *config;
 
 static int window;
 /** utilizado para auxiliar para modo de edição **/
-int objSelecionado = 0;
+int objSelecionado = -1;
+/** utilizando para indicar quais objetos estão no cenario **/
+int quantidadeObjetosEmCena = 5;
+int objetosEmCena[5];
 
 void menu(int num){
    switch(num) {
-        case -1:
+        case -1: // sair
             glutDestroyWindow(window);
             exit(0);
         case 0:
             objSelecionado = 0;
+            objetosEmCena[0] = 0; // representada patt.a
             break;
         case 1:
             objSelecionado = 1;
+            objetosEmCena[1] = 1; // representada patt.b
             break;
         case 2:
             objSelecionado = 2;
+            objetosEmCena[2] = 2; // representada patt.c
+            break;
+        case 3:
+            objSelecionado = 3;
+            objetosEmCena[3] = 3; // representada patt.d
+            break;
+        case 4:
+            objSelecionado = 4;
+            objetosEmCena[4] = 4; // representada patt.e
+            break;
+        case 5:
+            objSelecionado = 5;
+            objetosEmCena[5] = 5; // representada patt.f
             break;
     }
     glutPostRedisplay();
 }
 
-void createMenu(void){     
+void criarMenu(void){
     int menu_id, submenu_id;
-    
+
     submenu_id = glutCreateMenu(menu);
     glutAddMenuEntry("Cubo", 0);
     glutAddMenuEntry("Quadrado", 1);
-    glutAddMenuEntry("Torus", 2);     
-    
+    glutAddMenuEntry("Torus", 2);
+
     menu_id = glutCreateMenu(menu);
     glutAddSubMenu("Criar um novo objeto", submenu_id);
-    glutAddMenuEntry("Quit", -1);     
+    glutAddMenuEntry("Quit", -1);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
@@ -93,20 +111,6 @@ static void   keyEvent( unsigned char key, int x, int y)
         scanf("%d",&thresh); while( getchar()!='\n' );
         printf("\n");
         count = 0;
-    }
-
-    /* tecla para adicionar um novo obj */
-    if( key == 'n' ) {
-        printf("novo objeto!\n");
-        printf("\n - selecione de 0 a 9 para escolher o novo objeto \n");
-
-        if(key == 'n') {
-            printf("%c", key);
-            sleep(10); // esperando novo digito.
-        } else {
-            printf("%d", objSelecionado);
-            objSelecionado = (int)key;
-        }
     }
 
     /* turn on and off the debug mode with right mouse */
@@ -150,7 +154,7 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
     argConvGlpara(trans2, gl_para);
     glMultMatrixd( gl_para );
 
-    /* define qual cor deve ser o obj desenhado */
+    /* define algumas propriedades como aparencia sobre o objeto */
     if( mode == 0 ) {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -189,7 +193,7 @@ static void mainLoop(void)
     ARMarkerInfo    *marker_info;
     int             marker_num;
     double          err;
-    int             i;
+    int             i, j;
 
     /* grab a vide frame */
     if( (dataPtr = (ARUint8 *)arVideoGetImage()) == NULL ) {
@@ -208,8 +212,7 @@ static void mainLoop(void)
     argDrawMode2D();
     if( !arDebug ) {
         argDispImage( dataPtr, 0,0 );
-    }
-    else {
+    } else {
         argDispImage( dataPtr, 1, 1 );
         if( arImageProcMode == AR_IMAGE_PROC_IN_HALF )
             argDispHalfImage( arImage, 0, 0 );
@@ -241,10 +244,15 @@ static void mainLoop(void)
     glClearDepth( 1.0 );
     glClear(GL_DEPTH_BUFFER_BIT);
     for( i = 0; i < config->marker_num; i++ ) {
-        if( config->marker[i].visible >= 0 )
-            draw( config->trans, config->marker[i].trans, 0 );
-        else
-            draw( config->trans, config->marker[i].trans, 1 );
+        for(j = 0; j <= quantidadeObjetosEmCena; j++) {
+            if(objetosEmCena[j] == config->marker[i].patt_id) {
+                if( config->marker[i].visible >= 0 ) {
+                    draw( config->trans, config->marker[i].trans, 0 );
+                } else {
+                    draw( config->trans, config->marker[i].trans, 1 );
+                }
+            }
+        }
     }
     argSwapBuffers();
 }
@@ -304,7 +312,7 @@ int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
     init();
-    createMenu();
+    criarMenu();
     arVideoCapStart();
     argMainLoop( NULL, keyEvent, mainLoop );
 
