@@ -13,3 +13,5 @@ npm-debug.log
 **/env.properties
 dist/otus-studio.war
 **/.sonar
+*.depend
+*.layout
