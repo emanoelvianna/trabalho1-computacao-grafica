@@ -1,47 +1,102 @@
-#ifdef _WIN32
-#include <windows.h>
-#include <VideoIM.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#ifndef __APPLE__
-#include <GL/gl.h>
-#include <GL/glut.h>
-#else
-#include <OpenGL/gl.h>
-#include <GLUT/glut.h>
-#endif
-#include <AR/gsub.h>
-#include <AR/video.h>
-#include <AR/param.h>
-#include <AR/ar.h>
+/**
+ * PUCRS - FACIN
+ * Computação Gráfica II - Trabalho I
+ *
+ * teclas:
+ * move objeto para a esquerda: q
+ * move objeto para a direita: w
+ * move objeto para frente: a
+ * move objeto para trás: s
+ * move objeto para cima: z
+ * move objeto para baixo: x
+ * incluir objeto: i
+ * excluir objeto: d
+ * seleciona objeto anterior: e
+ * seleciona próximo objeto: r
+ */
+
 #include <AR/arMulti.h>
 #include <AR/config.h>
+#include <AR/video.h>
+#include <AR/param.h>
+#include <AR/gsub.h>
+#include <AR/ar.h>
+#include <GL/gl.h>
+#include <GL/glut.h>
+#include <windows.h>
+#include <VideoIM.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define MAXIMO_OBJETOS 20
 
-/* set up the video format globals */
+//estruturas
+typedef struct
+{
+    double x, y, z;
+} ponto_3d;
+typedef struct
+{
+    ponto_3d posicao, rotacao, escala;
+    int id, tipo;
+} objeto_grafico;
 
-#ifdef _WIN32
+//variáveis globais
 char *vconf = "Data\\WDM_camera_flipV.xml";
-#else
-char *vconf = "";
-#endif
-
+char *cparam_name = "Data/camera_para.dat";
+char *config_name = "Data/multi/marker.dat";
+ARMultiMarkerInfoT *config;
+ARParam cparam;
 int xsize, ysize;
 int thresh = 100;
 int count = 0;
+int gerador_id = 0;
+int contador_objetos = 0;
+int objeto_selecionado = 0;
+objeto_grafico lista_objetos[MAXIMO_OBJETOS];
 
-char *cparam_name = "Data/camera_para.dat";
-ARParam cparam;
-
-char *config_name = "Data/multi/marker.dat";
-ARMultiMarkerInfoT *config;
-
+//protótipos de funções
 static void init(void);
 static void cleanup(void);
 static void keyEvent( unsigned char key, int x, int y);
 static void mainLoop(void);
-static void draw( double trans1[3][4], double trans2[3][4], int mode );
+static void draw(double trans1[3][4], double trans2[3][4], int mode,int posicao_do_objeto_na_lista);
+void adiciona_objeto(objeto_grafico novo_objeto);
+void remove_objeto(int id_objeto);
 
+/**
+ * adiciona um novo objeto na lista de objetos
+ */
+void adiciona_objeto(objeto_grafico novo_objeto)
+{
+    if(contador_objetos < MAXIMO_OBJETOS)
+    {
+        lista_objetos[contador_objetos] = novo_objeto;
+        contador_objetos++;
+    }
+}
+
+/**
+ * remove um objeto da lista de objetos
+ */
+void remove_objeto(int id_objeto)
+{
+    int i,j;
+
+	if(contador_objetos > 0)
+	{
+		for(i = 0; i < contador_objetos; i++)
+		{
+			if(id_objeto == lista_objetos[i].id)
+			{
+				for(j = i; j < contador_objetos-1; j++)
+				{
+					lista_objetos[j] = lista_objetos[j+1];
+				}
+				contador_objetos--;
+			}
+        }
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -49,51 +104,15 @@ int main(int argc, char **argv)
     init();
 
     arVideoCapStart();
-    argMainLoop( NULL, keyEvent, mainLoop );
+    argMainLoop(NULL,keyEvent,mainLoop);
     return (0);
-}
-
-static void   keyEvent( unsigned char key, int x, int y)
-{
-    /* quit if the ESC key is pressed */
-    if( key == 0x1b )
-    {
-        printf("*** %f (frame/sec)\n", (double)count/arUtilTimer());
-        cleanup();
-        exit(0);
-    }
-
-    if( key == 't' )
-    {
-        printf("*** %f (frame/sec)\n", (double)count/arUtilTimer());
-        printf("Enter new threshold value (current = %d): ", thresh);
-        scanf("%d",&thresh);
-        while( getchar()!='\n' );
-        printf("\n");
-        count = 0;
-    }
-
-    /* turn on and off the debug mode with right mouse */
-    if( key == 'd' )
-    {
-        printf("*** %f (frame/sec)\n", (double)count/arUtilTimer());
-        arDebug = 1 - arDebug;
-        if( arDebug == 0 )
-        {
-            glClearColor( 0.0, 0.0, 0.0, 0.0 );
-            glClear(GL_COLOR_BUFFER_BIT);
-            argSwapBuffers();
-            glClear(GL_COLOR_BUFFER_BIT);
-            argSwapBuffers();
-        }
-        count = 0;
-    }
-
 }
 
 /* main loop */
 static void mainLoop(void)
 {
+	glLoadIdentity();
+
     ARUint8         *dataPtr;
     ARMarkerInfo    *marker_info;
     int             marker_num;
@@ -117,13 +136,13 @@ static void mainLoop(void)
     }
 
 	//VERIFICA MARCADOR CAPTURADO
-    char marcadores_char[6];
-	marcadores_char[0] = 'a';
-	marcadores_char[1] = 'b';
-	marcadores_char[2] = 'c';
-	marcadores_char[3] = 'd';
-	marcadores_char[4] = 'g';
-	marcadores_char[5] = 'f';
+    //char marcadores_char[6];
+	//marcadores_char[0] = 'a';
+	//marcadores_char[1] = 'b';
+	//marcadores_char[2] = 'c';
+	//marcadores_char[3] = 'd';
+	//marcadores_char[4] = 'g';
+	//marcadores_char[5] = 'f';
 	//printf("MARCADOR_CAPTURADO=%c\n",marcadores_char[marker_info->id]);
 
     argDrawMode2D();
@@ -179,8 +198,18 @@ static void mainLoop(void)
         {
             if(i == marker_info->id)
             {
-                draw( config->trans, config->marker[i].trans, marker_info->id );
-            }
+				int k;
+
+				//desenha todos os objetos de maneira relativa
+				for(k = 0; k < contador_objetos; k++)
+				{
+					glPushMatrix();
+
+					draw(config->trans, config->marker[i].trans, marker_info->id,k);
+
+					glPopMatrix();
+				}
+			}
 
         }
         //se a marcador não foi capturado no frame
@@ -235,18 +264,18 @@ static void cleanup(void)
     argCleanup();
 }
 
-static void draw( double trans1[3][4], double trans2[3][4], int mode )
+static void draw( double trans1[3][4], double trans2[3][4], int mode , int posicao_do_objeto_na_lista)
 {
     int i,j =0;
 	//calculando posição do objeto de acordo com o marcador lido
-	double x_objeto = 100;
-	double y_objeto = -50;
-	double z_objeto = 0;
+	double x_objeto = lista_objetos[posicao_do_objeto_na_lista].posicao.x;
+	double y_objeto = lista_objetos[posicao_do_objeto_na_lista].posicao.y;
+	double z_objeto = lista_objetos[posicao_do_objeto_na_lista].posicao.z;
 
-	for(i=0;i<3;i++) {
-        for(j=0;j<4;j++) printf("%10.5f ", trans2[i][j]);
-        printf("\n");
-    }
+	//for(i=0;i<3;i++) {
+        //for(j=0;j<4;j++) printf("%10.5f ", trans2[i][j]);
+        //printf("\n");
+    //}
 
 	double x_marcador = trans2[0][3];
 	double y_marcador = trans2[1][3];
@@ -265,7 +294,7 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
 	marcadores_char[3] = 'd';
 	marcadores_char[4] = 'g';
 	marcadores_char[5] = 'f';
-	printf("MARCADOR_CAPTURADO=%c\n - MARCADOR[%f;%f] TRANSLACAO[%f;%f]\n",marcadores_char[id_marcador],x_marcador,y_marcador,x_relativo,y_relativo);
+	//printf("MARCADOR_CAPTURADO=%c\n - MARCADOR[%f;%f] TRANSLACAO[%f;%f]\n",marcadores_char[id_marcador],x_marcador,y_marcador,x_relativo,y_relativo);
 
     double    gl_para[16];
     GLfloat   mat_ambient[]     = {0.0, 0.0, 1.0, 1.0};
@@ -290,7 +319,7 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
     argConvGlpara(trans2, gl_para);
     glMultMatrixd( gl_para );
 
-    if( mode == 0 )
+    if(posicao_do_objeto_na_lista == objeto_selecionado)
     {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -320,4 +349,110 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
     glDisable( GL_LIGHTING );
 
     glDisable( GL_DEPTH_TEST );
+}
+
+static void keyEvent( unsigned char tecla, int x, int y)
+{
+	//ESC => encerra programa
+    if (tecla == 0x1b)
+    {
+		cleanup();
+        exit(0);
+    }
+	//'d' => remove objeto selecionado
+    else if (tecla=='d')
+    {
+        int id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
+        remove_objeto(id_do_objeto_a_ser_removido);
+    }
+	//'i' => adiciona um objeto na lista de objetos
+    else if (tecla=='i' || tecla=='I')
+    {
+        printf("TECLA I FOI PRESSIONADA!!!\n");
+        if(contador_objetos < MAXIMO_OBJETOS)
+        {
+            float x,y,z;
+
+            objeto_grafico objeto_aux;
+            ponto_3d ponto_aux;
+            ponto_aux.x = 0.0;
+            ponto_aux.y = 0.0;
+            ponto_aux.z = 0.0;
+            objeto_aux.escala = ponto_aux;
+            objeto_aux.rotacao = ponto_aux;
+            objeto_aux.posicao = ponto_aux;
+            //faz leitura da posicao desejada
+			scanf("%f",&x);
+			scanf("%f",&y);
+			scanf("%f",&z);
+			printf("FLOAT ESCRITO %f\n",x);
+			objeto_aux.posicao.x = x;
+			objeto_aux.posicao.y = y;
+			objeto_aux.posicao.z = z;
+            gerador_id++;
+            objeto_aux.id = gerador_id;
+            objeto_aux.tipo = 0;
+            adiciona_objeto(objeto_aux);
+
+            //objeto_selecionado = contador_objetos;
+        }
+    }
+	//translação para a esquerda
+    else if (tecla=='q')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+        novo_valor--;
+        lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+    }
+	//translação para a direita
+    else if (tecla=='w')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+        novo_valor++;
+        lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+    }
+	//translação para frente
+    else if (tecla=='a')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+        novo_valor++;
+        lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+    }
+	//translação para trás
+    else if (tecla=='s')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+        novo_valor--;
+        lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+    }
+	//translação para cima
+    else if (tecla=='z')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+        novo_valor++;
+        lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+    }
+	//translação para baixo
+    else if (tecla=='x')
+    {
+        double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+        novo_valor--;
+        lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+    }
+	//seleciona objeto anterior
+    else if(tecla=='e')
+    {
+        if(objeto_selecionado > 0)
+        {
+            objeto_selecionado--;
+        }
+    }
+	//seleciona próximo objeto
+    else if(tecla=='r')
+    {
+        if(objeto_selecionado < contador_objetos-1)
+        {
+            objeto_selecionado++;
+        }
+    }
 }
