@@ -237,25 +237,27 @@ static void cleanup(void)
 
 static void draw( double trans1[3][4], double trans2[3][4], int mode )
 {
+    int i,j =0;
 	//calculando posição do objeto de acordo com o marcador lido
 	double x_objeto = 100;
 	double y_objeto = -50;
 	double z_objeto = 0;
-	
+
+	for(i=0;i<3;i++) {
+        for(j=0;j<4;j++) printf("%10.5f ", trans2[i][j]);
+        printf("\n");
+    }
+
 	double x_marcador = trans2[0][3];
 	double y_marcador = trans2[1][3];
 	double z_marcador = trans2[2][3];
-	
+
 	double x_relativo = x_objeto - x_marcador;
 	double y_relativo = y_objeto - y_marcador;
 	double z_relativo = z_objeto - z_marcador;
-	
-	x_relativo = x_marcador + x_relativo;
-	y_relativo = y_marcador + y_relativo;
-	z_relativo = y_marcador + z_relativo;
 
 	int id_marcador = mode;
-	
+
 	char marcadores_char[6];
 	marcadores_char[0] = 'a';
 	marcadores_char[1] = 'b';
@@ -264,7 +266,7 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
 	marcadores_char[4] = 'g';
 	marcadores_char[5] = 'f';
 	printf("MARCADOR_CAPTURADO=%c\n - MARCADOR[%f;%f] TRANSLACAO[%f;%f]\n",marcadores_char[id_marcador],x_marcador,y_marcador,x_relativo,y_relativo);
-	
+
     double    gl_para[16];
     GLfloat   mat_ambient[]     = {0.0, 0.0, 1.0, 1.0};
     GLfloat   mat_ambient1[]    = {1.0, 0.0, 0.0, 1.0};
