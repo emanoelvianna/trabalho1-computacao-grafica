@@ -124,7 +124,7 @@ static void mainLoop(void)
 	marcadores_char[3] = 'd';
 	marcadores_char[4] = 'g';
 	marcadores_char[5] = 'f';
-	printf("MARCADOR_CAPTURADO=%c\n",marcadores_char[marker_info->id]);
+	//printf("MARCADOR_CAPTURADO=%c\n",marcadores_char[marker_info->id]);
 
     argDrawMode2D();
     if( !arDebug )
@@ -170,10 +170,24 @@ static void mainLoop(void)
     argDraw3dCamera( 0, 0 );
     glClearDepth( 1.0 );
     glClear(GL_DEPTH_BUFFER_BIT);
+
+    //passa por todos os marcadores
     for( i = 0; i < config->marker_num; i++ )
     {
-        if( config->marker[i].visible >= 0 ) draw( config->trans, config->marker[i].trans, 0 );
-        else                                 draw( config->trans, config->marker[i].trans, 1 );
+        //se a marcador foi capturado no frame
+        if( config->marker[i].visible >= 0 )
+        {
+            if(i == marker_info->id)
+            {
+                draw( config->trans, config->marker[i].trans, marker_info->id );
+            }
+
+        }
+        //se a marcador não foi capturado no frame
+        else
+        {
+            //draw( config->trans, config->marker[i].trans, 1 );
+        }
     }
     argSwapBuffers();
 }
@@ -223,6 +237,34 @@ static void cleanup(void)
 
 static void draw( double trans1[3][4], double trans2[3][4], int mode )
 {
+	//calculando posição do objeto de acordo com o marcador lido
+	double x_objeto = 100;
+	double y_objeto = -50;
+	double z_objeto = 0;
+	
+	double x_marcador = trans2[0][3];
+	double y_marcador = trans2[1][3];
+	double z_marcador = trans2[2][3];
+	
+	double x_relativo = x_objeto - x_marcador;
+	double y_relativo = y_objeto - y_marcador;
+	double z_relativo = z_objeto - z_marcador;
+	
+	x_relativo = x_marcador + x_relativo;
+	y_relativo = y_marcador + y_relativo;
+	z_relativo = y_marcador + z_relativo;
+
+	int id_marcador = mode;
+	
+	char marcadores_char[6];
+	marcadores_char[0] = 'a';
+	marcadores_char[1] = 'b';
+	marcadores_char[2] = 'c';
+	marcadores_char[3] = 'd';
+	marcadores_char[4] = 'g';
+	marcadores_char[5] = 'f';
+	printf("MARCADOR_CAPTURADO=%c\n - MARCADOR[%f;%f] TRANSLACAO[%f;%f]\n",marcadores_char[id_marcador],x_marcador,y_marcador,x_relativo,y_relativo);
+	
     double    gl_para[16];
     GLfloat   mat_ambient[]     = {0.0, 0.0, 1.0, 1.0};
     GLfloat   mat_ambient1[]    = {1.0, 0.0, 0.0, 1.0};
@@ -269,7 +311,8 @@ static void draw( double trans1[3][4], double trans2[3][4], int mode )
         glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient1);
     }
     glMatrixMode(GL_MODELVIEW);
-    glTranslatef( 0.0, 0.0, 25.0 );
+    //glTranslatef( 0.0, 0.0, 25.0 );
+	glTranslatef( x_relativo, y_relativo, z_relativo );
     if( !arDebug ) glutSolidCube(50.0);
     else          glutWireCube(50.0);
     glDisable( GL_LIGHTING );
