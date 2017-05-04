@@ -166,7 +166,7 @@ void desenha_objeto(int tipo_do_objeto)
 		//quadro
 		case 2:
 		{
-			desenha_quadro;
+			desenha_quadro();
 			break;
 		}
     }
@@ -357,7 +357,7 @@ static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objet
 
     //desenha objeto
     if(!arDebug)
-    {        
+    {
         desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
     }
     else
@@ -509,19 +509,19 @@ static void init( void )
 
 	//define posições padrões
 	posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
-	posicao_default_parede_da_esquerda.y = -50;
-	posicao_default_parede_da_esquerda.z = 10;
+	posicao_default_parede_da_esquerda.y = 0;
+	posicao_default_parede_da_esquerda.z = 0;
 
-	posicao_default_parede_da_direita.x = X_PAREDE_DA_ESQUERDA;
-	posicao_default_parede_da_esquerda.y = -50;
-	posicao_default_parede_da_esquerda.z = 10;
+	posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
+	posicao_default_parede_da_esquerda.y = 0;
+	posicao_default_parede_da_esquerda.z = 0;
 
-	posicao_default_parede_do_fundo.x = 100;
+	posicao_default_parede_do_fundo.x = 0;
 	posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
-	posicao_default_parede_do_fundo.z = 10;
+	posicao_default_parede_do_fundo.z = 0;
 
-	posicao_default_chao.x = 100;
-	posicao_default_chao.z = -50;
+	posicao_default_chao.x = 0;
+	posicao_default_chao.z = 0;
 	posicao_default_chao.z = Z_CHAO;
 }
 
@@ -682,7 +682,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
     }
     //PAGE DOWN => seleciona objeto anterior
     else if(tecla== 'q')
-    {
+    {        
         if(objeto_selecionado > 0)
         {
             objeto_selecionado--;
@@ -690,7 +690,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
     }
     //PAGE UP => seleciona próximo objeto
     else if(tecla=='e')
-    {
+    {        
         if(objeto_selecionado < contador_objetos-1)
         {
             objeto_selecionado++;
