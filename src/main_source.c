@@ -151,24 +151,24 @@ void desenha_objeto(int tipo_do_objeto)
 {
     switch(tipo_do_objeto)
     {
-		//cubo
-		case 0:
-		{
-			desenha_cubo();
-			break;
-		}
-		//mesa
-		case 1:
-		{
-			desenha_mesa();
-			break;
-		}
-		//quadro
-		case 2:
-		{
-			desenha_quadro();
-			break;
-		}
+    //cubo
+    case 0:
+    {
+        desenha_cubo();
+        break;
+    }
+    //mesa
+    case 1:
+    {
+        desenha_mesa();
+        break;
+    }
+    //quadro
+    case 2:
+    {
+        desenha_quadro();
+        break;
+    }
     }
 }
 
@@ -185,7 +185,7 @@ void desenha_cubo()
  */
 void desenha_mesa()
 {
-    glutSolidCube(50.0);
+	glutSolidCube(50.0);
 }
 
 /**
@@ -208,7 +208,7 @@ void menu(int acao)
     rotacao_aux.y = 0.0;
     rotacao_aux.z = 0.0;
 
-	escala_aux.x = 0.0;
+    escala_aux.x = 0.0;
     escala_aux.y = 0.0;
     escala_aux.z = 0.0;
 
@@ -224,8 +224,8 @@ void menu(int acao)
     //cria mesa
     case 0:
     {
-		tipo = 1;
-		lugar = 3;
+        tipo = 1;
+        lugar = 3;
         cria_objeto(posicao_default_chao, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
@@ -233,8 +233,8 @@ void menu(int acao)
     //cria quadro na parede da esquerda
     case 1:
     {
-		tipo = 2;
-		lugar = 0;
+        tipo = 2;
+        lugar = 0;
         cria_objeto(posicao_default_parede_da_esquerda, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
@@ -242,8 +242,8 @@ void menu(int acao)
     //cria quadro na parede da direita
     case 2:
     {
-		tipo = 2;
-		lugar = 1;
+        tipo = 2;
+        lugar = 1;
         cria_objeto(posicao_default_parede_da_direita, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
@@ -251,8 +251,8 @@ void menu(int acao)
     //cria quadro na parede do fundo
     case 3:
     {
-		tipo = 2;
-		lugar = 2;
+        tipo = 2;
+        lugar = 2;
         cria_objeto(posicao_default_parede_do_fundo, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
@@ -507,22 +507,22 @@ static void init( void )
     argDrawMode     = AR_DRAW_BY_TEXTURE_MAPPING;
     argTexmapMode   = AR_DRAW_TEXTURE_HALF_IMAGE;
 
-	//define posições padrões
-	posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
-	posicao_default_parede_da_esquerda.y = 0;
-	posicao_default_parede_da_esquerda.z = 0;
+    //define posições padrões
+    posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
+    posicao_default_parede_da_esquerda.y = 0;
+    posicao_default_parede_da_esquerda.z = 0;
 
-	posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
-	posicao_default_parede_da_esquerda.y = 0;
-	posicao_default_parede_da_esquerda.z = 0;
+    posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
+    posicao_default_parede_da_esquerda.y = 0;
+    posicao_default_parede_da_esquerda.z = 0;
 
-	posicao_default_parede_do_fundo.x = 0;
-	posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
-	posicao_default_parede_do_fundo.z = 0;
+    posicao_default_parede_do_fundo.x = 0;
+    posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
+    posicao_default_parede_do_fundo.z = 0;
 
-	posicao_default_chao.x = 0;
-	posicao_default_chao.z = 0;
-	posicao_default_chao.z = Z_CHAO;
+    posicao_default_chao.x = 0;
+    posicao_default_chao.z = 0;
+    posicao_default_chao.z = Z_CHAO;
 }
 
 /**
@@ -682,7 +682,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
     }
     //PAGE DOWN => seleciona objeto anterior
     else if(tecla== 'q')
-    {        
+    {
         if(objeto_selecionado > 0)
         {
             objeto_selecionado--;
@@ -690,7 +690,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
     }
     //PAGE UP => seleciona próximo objeto
     else if(tecla=='e')
-    {        
+    {
         if(objeto_selecionado < contador_objetos-1)
         {
             objeto_selecionado++;
