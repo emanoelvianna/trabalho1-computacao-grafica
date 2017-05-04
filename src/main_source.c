@@ -3,10 +3,10 @@
  * Computação Gráfica II - Trabalho I
  *
  * teclas:
- * setas: mover objeto
- * page up: selecionar próximo objeto
- * page down: selecionar objeto anterior
- * delete: deletar objeto já selecionado
+ * w,a,s,d: mover objeto
+ * e: selecionar próximo objeto
+ * q: selecionar objeto anterior
+ * r: deletar objeto já selecionado
  * esc: sair do programa
  */
 
@@ -547,13 +547,13 @@ static void keyEvent( unsigned char tecla, int x, int y)
         exit(0);
     }
     //DELETE => deleta objeto selecionado
-    else if(tecla == 0x34)
+    else if(tecla == 'r')
     {
         int id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
         remove_objeto(id_do_objeto_a_ser_removido);
     }
     //LEFT ARROW => movimenta objeto
-    else if (tecla == 0x61)
+    else if (tecla == 'a')
     {
         //se o objeto está na parede da esquerda, z--
         if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
@@ -585,7 +585,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //RIGHT ARROW => movimenta objeto
-    else if (tecla == 0x63)
+    else if (tecla == 'd')
     {
         //se o objeto está na parede da esquerda, z++
         if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
@@ -617,7 +617,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //UP ARROW => movimenta objeto
-    else if (tecla == 0x57)
+    else if (tecla == 'w')
     {
         //se o objeto está na parede da esquerda, y++
         if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
@@ -649,7 +649,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //DOWN ARROW => movimenta objeto
-    else if (tecla == 0x62)
+    else if (tecla == 's')
     {
         //se o objeto está na parede da esquerda, y--
         if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
@@ -681,7 +681,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //PAGE DOWN => seleciona objeto anterior
-    else if(tecla==0x36)
+    else if(tecla== 'q')
     {
         if(objeto_selecionado > 0)
         {
@@ -689,7 +689,7 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //PAGE UP => seleciona próximo objeto
-    else if(tecla==0x21)
+    else if(tecla=='e')
     {
         if(objeto_selecionado < contador_objetos-1)
         {
