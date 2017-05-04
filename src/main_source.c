@@ -3,16 +3,11 @@
  * Computação Gráfica II - Trabalho I
  *
  * teclas:
- * move objeto para a esquerda: q
- * move objeto para a direita: w
- * move objeto para frente: a
- * move objeto para trás: s
- * move objeto para cima: z
- * move objeto para baixo: x
- * incluir objeto: i
- * excluir objeto: d
- * seleciona objeto anterior: e
- * seleciona próximo objeto: r
+ * setas: mover objeto
+ * page up: selecionar próximo objeto
+ * page down: selecionar objeto anterior
+ * delete: deletar objeto já selecionado
+ * esc: sair do programa
  */
 
 #include <AR/arMulti.h>
@@ -27,15 +22,27 @@
 #include <VideoIM.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define MAXIMO_OBJETOS 20
+#include <stdbool.h>
 
-//estruturas
+//constantes
+#define MAXIMO_OBJETOS 20
+#define LUGARES_NA_SALA 4
+#define X_PAREDE_DA_ESQUERDA -10
+#define X_PAREDE_DA_DIREITA 220
+#define Y_PAREDE_DO_FUNDO 10
+#define Z_CHAO 0
+
+//estrutura ponto_3d
 typedef struct
 {
     double x, y, z;
 } ponto_3d;
+
+//estrutura objeto_grafico
 typedef struct
 {
+    //parede_esqueda=0,parede_direita=1,parede_fundo=2,chao=3
+    bool lugar[LUGARES_NA_SALA];
     ponto_3d posicao, rotacao, escala;
     int id, tipo;
 } objeto_grafico;
@@ -54,14 +61,53 @@ int contador_objetos = 0;
 int objeto_selecionado = 0;
 objeto_grafico lista_objetos[MAXIMO_OBJETOS];
 
+//posições padrões
+ponto_3d posicao_default_parede_da_esquerda;
+ponto_3d posicao_default_parede_da_direita;
+ponto_3d posicao_default_parede_do_fundo;
+ponto_3d posicao_default_chao;
+
 //protótipos de funções
+void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala, int arg_tipo, int arg_lugar);
+void adiciona_objeto(objeto_grafico novo_objeto);
+void remove_objeto(int id_objeto);
+void desenha_objeto(int tipo_do_objeto);
+void desenha_cubo();
+void desenha_mesa();
+void desenha_quadro();
+void cria_menu(void);
+void menu(int acao);
+static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista);
+static void mainLoop(void);
 static void init(void);
 static void cleanup(void);
 static void keyEvent( unsigned char key, int x, int y);
-static void mainLoop(void);
-static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista);
-void adiciona_objeto(objeto_grafico novo_objeto);
-void remove_objeto(int id_objeto);
+
+/**
+ * cria um objeto e o adiciona na lista de objetos
+ */
+void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala, int arg_tipo, int arg_lugar)
+{
+    objeto_grafico objeto_aux;
+
+    objeto_aux.posicao = arg_posicao;
+    objeto_aux.rotacao = arg_rotacao;
+    objeto_aux.escala = arg_escala;
+
+    gerador_id++;
+    objeto_aux.id = gerador_id;
+
+    objeto_aux.tipo = arg_tipo;
+
+    int i;
+    for(i=0; i<LUGARES_NA_SALA; i++)
+    {
+        objeto_aux.lugar[i] = FALSE;
+    }
+    objeto_aux.lugar[arg_lugar] = TRUE;
+
+    adiciona_objeto(objeto_aux);
+}
 
 /**
  * adiciona um novo objeto na lista de objetos
@@ -98,158 +144,149 @@ void remove_objeto(int id_objeto)
     }
 }
 
-int main(int argc, char **argv)
+/**
+ * desenha um objeto
+ */
+void desenha_objeto(int tipo_do_objeto)
 {
-    glutInit(&argc, argv);
-    init();
-
-    arVideoCapStart();
-    argMainLoop(NULL,keyEvent,mainLoop);
-    return (0);
+    switch(tipo_do_objeto)
+    {
+		//cubo
+		case 0:
+		{
+			desenha_cubo();
+			break;
+		}
+		//mesa
+		case 1:
+		{
+			desenha_mesa();
+			break;
+		}
+		//quadro
+		case 2:
+		{
+			desenha_quadro;
+			break;
+		}
+    }
 }
 
 /**
- * main loop
+ * desenha um cubo
  */
-static void mainLoop(void)
+void desenha_cubo()
 {
-    glLoadIdentity();
+    glutSolidCube(50.0);
+}
 
-    ARUint8         *dataPtr;
-    ARMarkerInfo    *marker_info;
-    int             marker_num;
-    double          err;
-    int             i;
+/**
+ * desenha uma mesa
+ */
+void desenha_mesa()
+{
+    glutSolidCube(50.0);
+}
 
-    //grab a vide frame
-    if( (dataPtr = (ARUint8 *)arVideoGetImage()) == NULL )
+/**
+ * desenha um quadro
+ */
+void desenha_quadro()
+{
+    glutSolidCube(50.0);
+}
+
+/**
+ * executa ações do menu
+ */
+void menu(int acao)
+{
+    ponto_3d rotacao_aux, escala_aux;
+    int tipo, lugar = 0;
+
+    rotacao_aux.x = 0.0;
+    rotacao_aux.y = 0.0;
+    rotacao_aux.z = 0.0;
+
+	escala_aux.x = 0.0;
+    escala_aux.y = 0.0;
+    escala_aux.z = 0.0;
+
+    switch(acao)
     {
-        arUtilSleep(2);
-        return;
-    }
-    if( count == 0 ) arUtilTimerReset();
-    count++;
-
-    //detect the markers in the video frame
-    if( arDetectMarkerLite(dataPtr, thresh, &marker_info, &marker_num) < 0 )
+    //sair do programa
+    case -1:
     {
         cleanup();
         exit(0);
+        break;
     }
-
-    argDrawMode2D();
-    if( !arDebug )
+    //cria mesa
+    case 0:
     {
-        argDispImage( dataPtr, 0,0 );
+		tipo = 1;
+		lugar = 3;
+        cria_objeto(posicao_default_chao, rotacao_aux, escala_aux, tipo, lugar);
+
+        break;
     }
-    else
+    //cria quadro na parede da esquerda
+    case 1:
     {
-        argDispImage( dataPtr, 1, 1 );
-        if( arImageProcMode == AR_IMAGE_PROC_IN_HALF )
-        {
-            argDispHalfImage( arImage, 0, 0 );
-        }
-        else
-        {
-            argDispImage( arImage, 0, 0);
-        }
+		tipo = 2;
+		lugar = 0;
+        cria_objeto(posicao_default_parede_da_esquerda, rotacao_aux, escala_aux, tipo, lugar);
 
-        glColor3f( 1.0, 0.0, 0.0 );
-        glLineWidth( 1.0 );
-        for( i = 0; i < marker_num; i++ )
-        {
-            argDrawSquare( marker_info[i].vertex, 0, 0 );
-        }
-        glLineWidth( 1.0 );
+        break;
     }
-
-    arVideoCapNext();
-
-    if( (err=arMultiGetTransMat(marker_info, marker_num, config)) < 0 )
+    //cria quadro na parede da direita
+    case 2:
     {
-        argSwapBuffers();
-        return;
+		tipo = 2;
+		lugar = 1;
+        cria_objeto(posicao_default_parede_da_direita, rotacao_aux, escala_aux, tipo, lugar);
+
+        break;
     }
-    //printf("err = %f\n", err);
-    if(err > 100.0 )
+    //cria quadro na parede do fundo
+    case 3:
     {
-        argSwapBuffers();
-        return;
+		tipo = 2;
+		lugar = 2;
+        cria_objeto(posicao_default_parede_do_fundo, rotacao_aux, escala_aux, tipo, lugar);
+
+        break;
     }
-
-    argDrawMode3D();
-    argDraw3dCamera( 0, 0 );
-    glClearDepth( 1.0 );
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    //passa por todos os marcadores
-    for( i = 0; i < config->marker_num; i++ )
-    {
-        //se o marcador i foi capturado no frame
-        if(config->marker[i].visible >= 0)
-        {
-            int posicao_objeto;
-
-            if(i==0){printf("RECONHECEU A!!!\n");}
-            if(i==6){printf("RECONHECEU KANDI!!!\n");}
-            //desenha todos os objetos de maneira relativa ao marcador i
-            for(posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
-            {
-                glPushMatrix();
-
-                draw(config->trans, config->marker[i].trans, posicao_objeto);
-
-                glPopMatrix();
-            }
-        }
     }
-
-    argSwapBuffers();
+    glutPostRedisplay();
 }
 
-static void init( void )
+/**
+ * cria menu
+ */
+void cria_menu(void)
 {
-    ARParam  wparam;
+    int menu_principal, menu_objetos;
+    int menu_posicoes_quadro;
 
-    /* open the video path */
-    if( arVideoOpen( vconf ) < 0 ) exit(0);
-    /* find the size of the window */
-    if( arVideoInqSize(&xsize, &ysize) < 0 ) exit(0);
-    printf("Image size (x,y) = (%d,%d)\n", xsize, ysize);
+    menu_posicoes_quadro = glutCreateMenu(menu);
+    glutAddMenuEntry("Parede da Esquerda", 1);
+    glutAddMenuEntry("Parede da Direita", 2);
+    glutAddMenuEntry("Parede do Fundo", 3);
 
-    /* set the initial camera parameters */
-    if( arParamLoad(cparam_name, 1, &wparam) < 0 )
-    {
-        printf("Camera parameter load error !!\n");
-        exit(0);
-    }
-    arParamChangeSize( &wparam, xsize, ysize, &cparam );
-    arInitCparam( &cparam );
-    printf("*** Camera Parameter ***\n");
-    arParamDisp( &cparam );
+    menu_objetos = glutCreateMenu(menu);
+    glutAddSubMenu("Quadro", menu_posicoes_quadro);
+    glutAddMenuEntry("Mesa", 0);
 
-    if( (config = arMultiReadConfigFile(config_name)) == NULL )
-    {
-        printf("config data load error !!\n");
-        exit(0);
-    }
-
-    /* open the graphics window */
-    argInit( &cparam, 1.0, 0, 2, 1, 0 );
-    arFittingMode   = AR_FITTING_TO_IDEAL;
-    arImageProcMode = AR_IMAGE_PROC_IN_HALF;
-    argDrawMode     = AR_DRAW_BY_TEXTURE_MAPPING;
-    argTexmapMode   = AR_DRAW_TEXTURE_HALF_IMAGE;
+    menu_principal = glutCreateMenu(menu);
+    glutAddSubMenu("Criar um novo objeto", menu_objetos);
+    glutAddMenuEntry("Sair", -1);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-/* cleanup function called when program exits */
-static void cleanup(void)
-{
-    arVideoCapStop();
-    arVideoClose();
-    argCleanup();
-}
-
+/**
+ * chama a função desenha_objeto a partir da posição relativa entre um objeto e um marcador
+ */
 static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista)
 {
     //faz leitura das coordenadas do objeto
@@ -313,122 +350,361 @@ static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objet
         glMaterialfv(GL_FRONT, GL_SHININESS, mat_flash_shiny1);
         glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient1);
     }
-    glMatrixMode(GL_MODELVIEW);;
+    glMatrixMode(GL_MODELVIEW);
 
     //aplica a translação relativa entre marcador e objeto
     glTranslatef( x_relativo, y_relativo, z_relativo );
 
-    //DESENHA
-    if( !arDebug ) glutSolidCube(50.0);
-    else          glutWireCube(50.0);
+    //desenha objeto
+    if(!arDebug)
+    {        
+        desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
+    }
+    else
+    {
+        desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
+    }
 
     glDisable( GL_LIGHTING );
 
     glDisable( GL_DEPTH_TEST );
 }
 
-static void keyEvent( unsigned char tecla, int x, int y)
+/**
+ * main loop
+ */
+static void mainLoop(void)
 {
-    //ESC => encerra programa
-    if (tecla == 0x1b)
+    glLoadIdentity();
+
+    ARUint8         *dataPtr;
+    ARMarkerInfo    *marker_info;
+    int             marker_num;
+    double          err;
+    int             i;
+
+    //captura um frame
+    if( (dataPtr = (ARUint8 *)arVideoGetImage()) == NULL )
+    {
+        arUtilSleep(2);
+        return;
+    }
+    if( count == 0 ) arUtilTimerReset();
+    count++;
+
+    //detecta os marcadores capturados n frame
+    if( arDetectMarkerLite(dataPtr, thresh, &marker_info, &marker_num) < 0 )
     {
         cleanup();
         exit(0);
     }
-    //'d' => remove objeto selecionado
-    else if (tecla=='d')
+
+    argDrawMode2D();
+    if( !arDebug )
+    {
+        argDispImage( dataPtr, 0,0 );
+    }
+    else
+    {
+        argDispImage( dataPtr, 1, 1 );
+        if( arImageProcMode == AR_IMAGE_PROC_IN_HALF )
+        {
+            argDispHalfImage( arImage, 0, 0 );
+        }
+        else
+        {
+            argDispImage( arImage, 0, 0);
+        }
+
+        glColor3f( 1.0, 0.0, 0.0 );
+        glLineWidth( 1.0 );
+        for( i = 0; i < marker_num; i++ )
+        {
+            argDrawSquare( marker_info[i].vertex, 0, 0 );
+        }
+        glLineWidth( 1.0 );
+    }
+
+    arVideoCapNext();
+
+    if( (err=arMultiGetTransMat(marker_info, marker_num, config)) < 0 )
+    {
+        argSwapBuffers();
+        return;
+    }
+    //printf("err = %f\n", err);
+    if(err > 100.0 )
+    {
+        argSwapBuffers();
+        return;
+    }
+
+    argDrawMode3D();
+    argDraw3dCamera( 0, 0 );
+    glClearDepth( 1.0 );
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    //passa por todos os marcadores
+    for( i = 0; i < config->marker_num; i++ )
+    {
+        //se o marcador i foi capturado no frame
+        if(config->marker[i].visible >= 0)
+        {
+            int posicao_objeto;
+
+            //if(i==0){printf("RECONHECEU A!!!\n");}
+            //if(i==6){printf("RECONHECEU KANJI!!!\n");}
+
+            //desenha todos os objetos de maneira relativa ao marcador i
+            for(posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
+            {
+                glPushMatrix();
+
+                draw(config->trans, config->marker[i].trans, posicao_objeto);
+
+                glPopMatrix();
+            }
+        }
+    }
+
+    argSwapBuffers();
+}
+
+/**
+ * inicializa variáveis e estruturas do programa
+ */
+static void init( void )
+{
+    ARParam  wparam;
+
+    //abre o caminha do vídeo
+    if( arVideoOpen( vconf ) < 0 ) exit(0);
+    //encontra o tamanho da janela
+    if( arVideoInqSize(&xsize, &ysize) < 0 ) exit(0);
+    printf("Image size (x,y) = (%d,%d)\n", xsize, ysize);
+
+    //inicializa os parâmetros da câmera
+    if( arParamLoad(cparam_name, 1, &wparam) < 0 )
+    {
+        printf("Camera parameter load error !!\n");
+        exit(0);
+    }
+    arParamChangeSize( &wparam, xsize, ysize, &cparam );
+    arInitCparam( &cparam );
+    printf("*** Camera Parameter ***\n");
+    arParamDisp( &cparam );
+
+    if( (config = arMultiReadConfigFile(config_name)) == NULL )
+    {
+        printf("config data load error !!\n");
+        exit(0);
+    }
+
+    //abre a janela
+    argInit( &cparam, 1.0, 0, 2, 1, 0 );
+    arFittingMode   = AR_FITTING_TO_IDEAL;
+    arImageProcMode = AR_IMAGE_PROC_IN_HALF;
+    argDrawMode     = AR_DRAW_BY_TEXTURE_MAPPING;
+    argTexmapMode   = AR_DRAW_TEXTURE_HALF_IMAGE;
+
+	//define posições padrões
+	posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
+	posicao_default_parede_da_esquerda.y = -50;
+	posicao_default_parede_da_esquerda.z = 10;
+
+	posicao_default_parede_da_direita.x = X_PAREDE_DA_ESQUERDA;
+	posicao_default_parede_da_esquerda.y = -50;
+	posicao_default_parede_da_esquerda.z = 10;
+
+	posicao_default_parede_do_fundo.x = 100;
+	posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
+	posicao_default_parede_do_fundo.z = 10;
+
+	posicao_default_chao.x = 100;
+	posicao_default_chao.z = -50;
+	posicao_default_chao.z = Z_CHAO;
+}
+
+/**
+ * efetua procedimentos necessários antes de encerrar o programa
+ */
+static void cleanup(void)
+{
+    arVideoCapStop();
+    arVideoClose();
+    argCleanup();
+}
+
+/**
+ * tratamento das teclas pressionadas
+ */
+static void keyEvent( unsigned char tecla, int x, int y)
+{
+    //ESC => encerra programa
+    if(tecla == 0x1b)
+    {
+        cleanup();
+        exit(0);
+    }
+    //DELETE => deleta objeto selecionado
+    else if(tecla == 0x34)
     {
         int id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
         remove_objeto(id_do_objeto_a_ser_removido);
     }
-    //'i' => adiciona um objeto na lista de objetos
-    else if (tecla=='i' || tecla=='I')
+    //LEFT ARROW => movimenta objeto
+    else if (tecla == 0x61)
     {
-        printf("TECLA I FOI PRESSIONADA!!!\n");
-        if(contador_objetos < MAXIMO_OBJETOS)
+        //se o objeto está na parede da esquerda, z--
+        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
-            float x,y,z;
-
-            objeto_grafico objeto_aux;
-            ponto_3d ponto_aux;
-            ponto_aux.x = 0.0;
-            ponto_aux.y = 0.0;
-            ponto_aux.z = 0.0;
-            objeto_aux.escala = ponto_aux;
-            objeto_aux.rotacao = ponto_aux;
-            objeto_aux.posicao = ponto_aux;
-            //faz leitura da posicao desejada
-            scanf("%f",&x);
-            scanf("%f",&y);
-            scanf("%f",&z);
-            printf("FLOAT ESCRITO %f\n",x);
-            objeto_aux.posicao.x = x;
-            objeto_aux.posicao.y = y;
-            objeto_aux.posicao.z = z;
-            gerador_id++;
-            objeto_aux.id = gerador_id;
-            objeto_aux.tipo = 0;
-            adiciona_objeto(objeto_aux);
-
-            //objeto_selecionado = contador_objetos;
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede da direita, z--
+        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede do fundo, x--
+        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        }
+        //se o objeto está no chão, x--
+        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
         }
     }
-    //translação para a esquerda
-    else if (tecla=='q')
+    //RIGHT ARROW => movimenta objeto
+    else if (tecla == 0x63)
     {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-        novo_valor--;
-        lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        //se o objeto está na parede da esquerda, z++
+        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede da direita, z++
+        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede do fundo, x++
+        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        }
+        //se o objeto está no chão, x++
+        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        }
     }
-    //translação para a direita
-    else if (tecla=='w')
+    //UP ARROW => movimenta objeto
+    else if (tecla == 0x57)
     {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-        novo_valor++;
-        lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        //se o objeto está na parede da esquerda, y++
+        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede da direita, y++
+        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede do fundo, z++
+        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está no chão, y++
+        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
     }
-    //translação para frente
-    else if (tecla=='a')
+    //DOWN ARROW => movimenta objeto
+    else if (tecla == 0x62)
     {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-        novo_valor++;
-        lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        //se o objeto está na parede da esquerda, y--
+        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede da direita, y--
+        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede do fundo, z--
+        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está no chão, y--
+        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
     }
-    //translação para trás
-    else if (tecla=='s')
-    {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-        novo_valor--;
-        lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-    }
-    //translação para cima
-    else if (tecla=='z')
-    {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-        novo_valor++;
-        lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-    }
-    //translação para baixo
-    else if (tecla=='x')
-    {
-        double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-        novo_valor--;
-        lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-    }
-    //seleciona objeto anterior
-    else if(tecla=='e')
+    //PAGE DOWN => seleciona objeto anterior
+    else if(tecla==0x36)
     {
         if(objeto_selecionado > 0)
         {
             objeto_selecionado--;
         }
     }
-    //seleciona próximo objeto
-    else if(tecla=='r')
+    //PAGE UP => seleciona próximo objeto
+    else if(tecla==0x21)
     {
         if(objeto_selecionado < contador_objetos-1)
         {
             objeto_selecionado++;
         }
     }
+}
+
+int main(int argc, char **argv)
+{
+    glutInit(&argc, argv);
+    init();
+    cria_menu();
+
+    arVideoCapStart();
+    argMainLoop(NULL,keyEvent,mainLoop);
+    return (0);
 }
