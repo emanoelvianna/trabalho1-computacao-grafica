@@ -249,7 +249,7 @@ void desenha_objeto(int tipo_do_objeto)
 }
 
 /**
- * desenha um cubo
+ * desenha uma cadeira
  */
 void desenha_cadeira(float x, float y, float z, float degrees)
 {
@@ -318,13 +318,11 @@ void desenha_mesa()
     glPushMatrix();
     glTranslatef(2.0f, 0.0f, 3.0f);
 
-    //Tegner bordplate
     glPushMatrix();
     glTranslatef(5.0f, 3.0f, 20.0f);
     desenhaCubo(0.5f, 10, 10);
     glPopMatrix();
 
-    //Tegner bordbein
     glPushMatrix();
     glTranslatef(5.0f, -5.0f, 20.0f);
     desenhaCubo(8, 0.5f, 0.5f);
@@ -353,7 +351,15 @@ void desenha_mesa()
  */
 void desenha_quadro()
 {
-    glutSolidCube(50.0);
+    glPushMatrix();
+    glTranslatef(2.0f, 0.0f, 3.0f);
+
+    glPushMatrix();
+    glTranslatef(5.0f, 3.0f, 20.0f);
+    desenhaCubo(0.5f, 10, 10);
+    glPopMatrix();
+
+    glPopMatrix();
 }
 
 /**
