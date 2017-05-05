@@ -60,6 +60,7 @@ int gerador_id = 0;
 int contador_objetos = 0;
 int objeto_selecionado = 0;
 objeto_grafico lista_objetos[MAXIMO_OBJETOS];
+int texture[3][1];
 
 //posições padrões
 ponto_3d posicao_default_parede_da_esquerda;
@@ -81,7 +82,82 @@ static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto
 static void mainLoop(void);
 static void init(void);
 static void cleanup(void);
-static void keyEvent( unsigned char key, int x, int y);
+static void keyEvent(unsigned char key, int x, int y);
+
+/**
+ * funcao auxiliar para criar a mesa
+ */
+void desenhaCubo(float height, float width, float depth)
+{
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(0.0f, height, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(width, height, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(width, 0.0f, 0.0f);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -depth);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(0.0f, height, -depth);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(width, height, -depth);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(width, 0.0f, -depth);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, height, 0.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(0.0f, height, -depth);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(width, height, -depth);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(width, height, 0.0f);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(0.0f, height, 0.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(0.0f, height, -depth);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -depth);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(width, 0.0f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(width, height, 0.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(width, height, -depth);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(width, 0.0f, -depth);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, -depth);
+    glVertex3f(width, 0.0f, -depth);
+    glVertex3f(width, 0.0f, 0.0f);
+    glEnd();
+}
 
 /**
  * cria um objeto e o adiciona na lista de objetos
@@ -100,7 +176,7 @@ void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala
     objeto_aux.tipo = arg_tipo;
 
     int i;
-    for(i=0; i<LUGARES_NA_SALA; i++)
+    for (i = 0; i < LUGARES_NA_SALA; i++)
     {
         objeto_aux.lugar[i] = FALSE;
     }
@@ -114,7 +190,7 @@ void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala
  */
 void adiciona_objeto(objeto_grafico novo_objeto)
 {
-    if(contador_objetos < MAXIMO_OBJETOS)
+    if (contador_objetos < MAXIMO_OBJETOS)
     {
         lista_objetos[contador_objetos] = novo_objeto;
         contador_objetos++;
@@ -126,17 +202,17 @@ void adiciona_objeto(objeto_grafico novo_objeto)
  */
 void remove_objeto(int id_objeto)
 {
-    int i,j;
+    int i, j;
 
-    if(contador_objetos > 0)
+    if (contador_objetos > 0)
     {
-        for(i = 0; i < contador_objetos; i++)
+        for (i = 0; i < contador_objetos; i++)
         {
-            if(id_objeto == lista_objetos[i].id)
+            if (id_objeto == lista_objetos[i].id)
             {
-                for(j = i; j < contador_objetos-1; j++)
+                for (j = i; j < contador_objetos - 1; j++)
                 {
-                    lista_objetos[j] = lista_objetos[j+1];
+                    lista_objetos[j] = lista_objetos[j + 1];
                 }
                 contador_objetos--;
             }
@@ -149,12 +225,12 @@ void remove_objeto(int id_objeto)
  */
 void desenha_objeto(int tipo_do_objeto)
 {
-    switch(tipo_do_objeto)
+    switch (tipo_do_objeto)
     {
-    //cubo
+    //cadeira
     case 0:
     {
-        desenha_cubo();
+        desenha_cadeira(35.f, 0.f, 10.f, 270.f);
         break;
     }
     //mesa
@@ -173,11 +249,65 @@ void desenha_objeto(int tipo_do_objeto)
 }
 
 /**
- * desenha um cubo
+ * desenha uma cadeira
  */
-void desenha_cubo()
+void desenha_cadeira(float x, float y, float z, float degrees)
 {
-    glutSolidCube(50.0);
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(degrees, 0.0f, 1.0f, 0.0f);
+
+    glPushMatrix();
+    glTranslatef(5.0f, 0.0f, 20.0f);
+    desenhaCubo(0.5f, 7, 7);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, -5.0f, 20.0f);
+    desenhaCubo(5, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(11.0f, -5.0f, 20.0f);
+    desenhaCubo(5, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(11.0f, -5.0f, 14.0f);
+    desenhaCubo(5, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, -5.0f, 14.0f);
+    desenhaCubo(5, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, 0.5f, 14.0f);
+    desenhaCubo(6, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(11.5f, 0.5f, 14.0f);
+    desenhaCubo(6, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(7.0f, 0.5f, 14.0f);
+    desenhaCubo(6, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(9.5f, 0.5f, 14.0f);
+    desenhaCubo(6, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, 6.5f, 14.0f);
+    desenhaCubo(2, 7, 0.5f);
+    glPopMatrix();
+
+    glPopMatrix();
 }
 
 /**
@@ -185,7 +315,35 @@ void desenha_cubo()
  */
 void desenha_mesa()
 {
-	glutSolidCube(50.0);
+    glPushMatrix();
+    glTranslatef(2.0f, 0.0f, 3.0f);
+
+    glPushMatrix();
+    glTranslatef(5.0f, 3.0f, 20.0f);
+    desenhaCubo(0.5f, 10, 10);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, -5.0f, 20.0f);
+    desenhaCubo(8, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(14.0f, -5.0f, 20.0f);
+    desenhaCubo(8, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(14.0f, -5.0f, 11.0f);
+    desenhaCubo(8, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(5.0f, -5.0f, 11.0f);
+    desenhaCubo(8, 0.5f, 0.5f);
+    glPopMatrix();
+
+    glPopMatrix();
 }
 
 /**
@@ -193,7 +351,15 @@ void desenha_mesa()
  */
 void desenha_quadro()
 {
-    glutSolidCube(50.0);
+    glPushMatrix();
+    glTranslatef(2.0f, 0.0f, 3.0f);
+
+    glPushMatrix();
+    glTranslatef(5.0f, 3.0f, 20.0f);
+    desenhaCubo(0.5f, 10, 10);
+    glPopMatrix();
+
+    glPopMatrix();
 }
 
 /**
@@ -212,7 +378,7 @@ void menu(int acao)
     escala_aux.y = 0.0;
     escala_aux.z = 0.0;
 
-    switch(acao)
+    switch (acao)
     {
     //sair do programa
     case -1:
@@ -230,8 +396,17 @@ void menu(int acao)
 
         break;
     }
-    //cria quadro na parede da esquerda
+    //cria cadeira
     case 1:
+    {
+        tipo = 0;
+        lugar = 2;
+        cria_objeto(posicao_default_parede_do_fundo, rotacao_aux, escala_aux, tipo, lugar);
+
+        break;
+    }
+    //cria quadro na parede da esquerda
+    case 2:
     {
         tipo = 2;
         lugar = 0;
@@ -240,7 +415,7 @@ void menu(int acao)
         break;
     }
     //cria quadro na parede da direita
-    case 2:
+    case 3:
     {
         tipo = 2;
         lugar = 1;
@@ -249,7 +424,7 @@ void menu(int acao)
         break;
     }
     //cria quadro na parede do fundo
-    case 3:
+    case 4:
     {
         tipo = 2;
         lugar = 2;
@@ -270,12 +445,13 @@ void cria_menu(void)
     int menu_posicoes_quadro;
 
     menu_posicoes_quadro = glutCreateMenu(menu);
-    glutAddMenuEntry("Parede da Esquerda", 1);
-    glutAddMenuEntry("Parede da Direita", 2);
-    glutAddMenuEntry("Parede do Fundo", 3);
+    glutAddMenuEntry("Parede da Esquerda", 2);
+    glutAddMenuEntry("Parede da Direita", 3);
+    glutAddMenuEntry("Parede do Fundo", 4);
 
     menu_objetos = glutCreateMenu(menu);
     glutAddSubMenu("Quadro", menu_posicoes_quadro);
+    glutAddMenuEntry("Cadeira", 1);
     glutAddMenuEntry("Mesa", 0);
 
     menu_principal = glutCreateMenu(menu);
@@ -287,7 +463,7 @@ void cria_menu(void)
 /**
  * chama a função desenha_objeto a partir da posição relativa entre um objeto e um marcador
  */
-static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista)
+static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista)
 {
     //faz leitura das coordenadas do objeto
     double x_objeto = lista_objetos[posicao_do_objeto_na_lista].posicao.x;
@@ -304,31 +480,31 @@ static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objet
     double y_relativo = y_objeto - y_marcador;
     double z_relativo = z_objeto - z_marcador;
 
-    double    gl_para[16];
-    GLfloat   mat_ambient[]     = {0.0, 0.0, 1.0, 1.0};
-    GLfloat   mat_ambient1[]    = {1.0, 0.0, 0.0, 1.0};
-    GLfloat   mat_flash[]       = {0.0, 0.0, 1.0, 1.0};
-    GLfloat   mat_flash1[]      = {1.0, 0.0, 0.0, 1.0};
-    GLfloat   mat_flash_shiny[] = {50.0};
-    GLfloat   mat_flash_shiny1[]= {50.0};
-    GLfloat   light_position[]  = {100.0,-200.0,200.0,0.0};
-    GLfloat   ambi[]            = {0.1, 0.1, 0.1, 0.1};
-    GLfloat   lightZeroColor[]  = {0.9, 0.9, 0.9, 0.1};
+    double gl_para[16];
+    GLfloat mat_ambient[] = {0.0, 0.0, 1.0, 1.0};
+    GLfloat mat_ambient1[] = {1.0, 0.0, 0.0, 1.0};
+    GLfloat mat_flash[] = {0.0, 0.0, 1.0, 1.0};
+    GLfloat mat_flash1[] = {1.0, 0.0, 0.0, 1.0};
+    GLfloat mat_flash_shiny[] = {50.0};
+    GLfloat mat_flash_shiny1[] = {50.0};
+    GLfloat light_position[] = {100.0, -200.0, 200.0, 0.0};
+    GLfloat ambi[] = {0.1, 0.1, 0.1, 0.1};
+    GLfloat lightZeroColor[] = {0.9, 0.9, 0.9, 0.1};
 
     argDrawMode3D();
-    argDraw3dCamera( 0, 0 );
+    argDraw3dCamera(0, 0);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
     //load the camera transformation matrix
     glMatrixMode(GL_MODELVIEW);
     argConvGlpara(trans1, gl_para);
-    glLoadMatrixd( gl_para );
+    glLoadMatrixd(gl_para);
     argConvGlpara(trans2, gl_para);
-    glMultMatrixd( gl_para );
+    glMultMatrixd(gl_para);
 
     //a cor do objeto selecionado pelo usuário é azul
-    if(posicao_do_objeto_na_lista == objeto_selecionado)
+    if (posicao_do_objeto_na_lista == objeto_selecionado)
     {
         glEnable(GL_LIGHTING);
         glEnable(GL_LIGHT0);
@@ -353,10 +529,10 @@ static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objet
     glMatrixMode(GL_MODELVIEW);
 
     //aplica a translação relativa entre marcador e objeto
-    glTranslatef( x_relativo, y_relativo, z_relativo );
+    glTranslatef(x_relativo, y_relativo, z_relativo);
 
     //desenha objeto
-    if(!arDebug)
+    if (!arDebug)
     {
         desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
     }
@@ -365,9 +541,9 @@ static void draw( double trans1[3][4], double trans2[3][4], int posicao_do_objet
         desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
     }
 
-    glDisable( GL_LIGHTING );
+    glDisable(GL_LIGHTING);
 
-    glDisable( GL_DEPTH_TEST );
+    glDisable(GL_DEPTH_TEST);
 }
 
 /**
@@ -377,78 +553,79 @@ static void mainLoop(void)
 {
     glLoadIdentity();
 
-    ARUint8         *dataPtr;
-    ARMarkerInfo    *marker_info;
-    int             marker_num;
-    double          err;
-    int             i;
+    ARUint8 *dataPtr;
+    ARMarkerInfo *marker_info;
+    int marker_num;
+    double err;
+    int i;
 
     //captura um frame
-    if( (dataPtr = (ARUint8 *)arVideoGetImage()) == NULL )
+    if ((dataPtr = (ARUint8 *)arVideoGetImage()) == NULL)
     {
         arUtilSleep(2);
         return;
     }
-    if( count == 0 ) arUtilTimerReset();
+    if (count == 0)
+        arUtilTimerReset();
     count++;
 
     //detecta os marcadores capturados n frame
-    if( arDetectMarkerLite(dataPtr, thresh, &marker_info, &marker_num) < 0 )
+    if (arDetectMarkerLite(dataPtr, thresh, &marker_info, &marker_num) < 0)
     {
         cleanup();
         exit(0);
     }
 
     argDrawMode2D();
-    if( !arDebug )
+    if (!arDebug)
     {
-        argDispImage( dataPtr, 0,0 );
+        argDispImage(dataPtr, 0, 0);
     }
     else
     {
-        argDispImage( dataPtr, 1, 1 );
-        if( arImageProcMode == AR_IMAGE_PROC_IN_HALF )
+        argDispImage(dataPtr, 1, 1);
+        if (arImageProcMode == AR_IMAGE_PROC_IN_HALF)
         {
-            argDispHalfImage( arImage, 0, 0 );
+            argDispHalfImage(arImage, 0, 0);
         }
         else
         {
-            argDispImage( arImage, 0, 0);
+            argDispImage(arImage, 0, 0);
         }
 
-        glColor3f( 1.0, 0.0, 0.0 );
-        glLineWidth( 1.0 );
-        for( i = 0; i < marker_num; i++ )
+        glColor3f(1.0, 0.0, 0.0);
+        glLineWidth(1.0);
+        for (i = 0; i < marker_num; i++)
         {
-            argDrawSquare( marker_info[i].vertex, 0, 0 );
+            argDrawSquare(marker_info[i].vertex, 0, 0);
         }
-        glLineWidth( 1.0 );
+        glLineWidth(1.0);
     }
 
     arVideoCapNext();
 
-    if( (err=arMultiGetTransMat(marker_info, marker_num, config)) < 0 )
+    if ((err = arMultiGetTransMat(marker_info, marker_num, config)) < 0)
     {
         argSwapBuffers();
         return;
     }
     //printf("err = %f\n", err);
-    if(err > 100.0 )
+    if (err > 100.0)
     {
         argSwapBuffers();
         return;
     }
 
     argDrawMode3D();
-    argDraw3dCamera( 0, 0 );
-    glClearDepth( 1.0 );
+    argDraw3dCamera(0, 0);
+    glClearDepth(1.0);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     //passa por todos os marcadores
-    for( i = 0; i < config->marker_num; i++ )
+    for (i = 0; i < config->marker_num; i++)
     {
         //se o marcador i foi capturado no frame
-        if(config->marker[i].visible >= 0)
+        if (config->marker[i].visible >= 0)
         {
             int posicao_objeto;
 
@@ -456,7 +633,7 @@ static void mainLoop(void)
             //if(i==6){printf("RECONHECEU KANJI!!!\n");}
 
             //desenha todos os objetos de maneira relativa ao marcador i
-            for(posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
+            for (posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
             {
                 glPushMatrix();
 
@@ -473,39 +650,41 @@ static void mainLoop(void)
 /**
  * inicializa variáveis e estruturas do programa
  */
-static void init( void )
+static void init(void)
 {
-    ARParam  wparam;
+    ARParam wparam;
 
     //abre o caminha do vídeo
-    if( arVideoOpen( vconf ) < 0 ) exit(0);
+    if (arVideoOpen(vconf) < 0)
+        exit(0);
     //encontra o tamanho da janela
-    if( arVideoInqSize(&xsize, &ysize) < 0 ) exit(0);
+    if (arVideoInqSize(&xsize, &ysize) < 0)
+        exit(0);
     printf("Image size (x,y) = (%d,%d)\n", xsize, ysize);
 
     //inicializa os parâmetros da câmera
-    if( arParamLoad(cparam_name, 1, &wparam) < 0 )
+    if (arParamLoad(cparam_name, 1, &wparam) < 0)
     {
         printf("Camera parameter load error !!\n");
         exit(0);
     }
-    arParamChangeSize( &wparam, xsize, ysize, &cparam );
-    arInitCparam( &cparam );
+    arParamChangeSize(&wparam, xsize, ysize, &cparam);
+    arInitCparam(&cparam);
     printf("*** Camera Parameter ***\n");
-    arParamDisp( &cparam );
+    arParamDisp(&cparam);
 
-    if( (config = arMultiReadConfigFile(config_name)) == NULL )
+    if ((config = arMultiReadConfigFile(config_name)) == NULL)
     {
         printf("config data load error !!\n");
         exit(0);
     }
 
     //abre a janela
-    argInit( &cparam, 1.0, 0, 2, 1, 0 );
-    arFittingMode   = AR_FITTING_TO_IDEAL;
+    argInit(&cparam, 1.0, 0, 0, 0, 0);
+    arFittingMode = AR_FITTING_TO_IDEAL;
     arImageProcMode = AR_IMAGE_PROC_IN_HALF;
-    argDrawMode     = AR_DRAW_BY_TEXTURE_MAPPING;
-    argTexmapMode   = AR_DRAW_TEXTURE_HALF_IMAGE;
+    argDrawMode = AR_DRAW_BY_TEXTURE_MAPPING;
+    argTexmapMode = AR_DRAW_TEXTURE_HALF_IMAGE;
 
     //define posições padrões
     posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
@@ -538,16 +717,16 @@ static void cleanup(void)
 /**
  * tratamento das teclas pressionadas
  */
-static void keyEvent( unsigned char tecla, int x, int y)
+static void keyEvent(unsigned char tecla, int x, int y)
 {
     //ESC => encerra programa
-    if(tecla == 0x1b)
+    if (tecla == 0x1b)
     {
         cleanup();
         exit(0);
     }
     //DELETE => deleta objeto selecionado
-    else if(tecla == 'r')
+    else if (tecla == 'r')
     {
         int id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
         remove_objeto(id_do_objeto_a_ser_removido);
@@ -556,28 +735,28 @@ static void keyEvent( unsigned char tecla, int x, int y)
     else if (tecla == 'a')
     {
         //se o objeto está na parede da esquerda, z--
-        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está na parede da direita, z--
-        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está na parede do fundo, x--
-        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.x = novo_valor;
         }
         //se o objeto está no chão, x--
-        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
             novo_valor--;
@@ -588,28 +767,28 @@ static void keyEvent( unsigned char tecla, int x, int y)
     else if (tecla == 'd')
     {
         //se o objeto está na parede da esquerda, z++
-        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está na parede da direita, z++
-        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está na parede do fundo, x++
-        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.x = novo_valor;
         }
         //se o objeto está no chão, x++
-        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
             novo_valor++;
@@ -620,28 +799,28 @@ static void keyEvent( unsigned char tecla, int x, int y)
     else if (tecla == 'w')
     {
         //se o objeto está na parede da esquerda, y++
-        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.y = novo_valor;
         }
         //se o objeto está na parede da direita, y++
-        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.y = novo_valor;
         }
         //se o objeto está na parede do fundo, z++
-        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor++;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está no chão, y++
-        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor++;
@@ -652,28 +831,28 @@ static void keyEvent( unsigned char tecla, int x, int y)
     else if (tecla == 's')
     {
         //se o objeto está na parede da esquerda, y--
-        if(lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.y = novo_valor;
         }
         //se o objeto está na parede da direita, y--
-        else if(lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.y = novo_valor;
         }
         //se o objeto está na parede do fundo, z--
-        else if(lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
             novo_valor--;
             lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
         //se o objeto está no chão, y--
-        else if(lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
         {
             double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
             novo_valor--;
@@ -681,17 +860,17 @@ static void keyEvent( unsigned char tecla, int x, int y)
         }
     }
     //PAGE DOWN => seleciona objeto anterior
-    else if(tecla== 'q')
+    else if (tecla == 'q')
     {
-        if(objeto_selecionado > 0)
+        if (objeto_selecionado > 0)
         {
             objeto_selecionado--;
         }
     }
     //PAGE UP => seleciona próximo objeto
-    else if(tecla=='e')
+    else if (tecla == 'e')
     {
-        if(objeto_selecionado < contador_objetos-1)
+        if (objeto_selecionado < contador_objetos - 1)
         {
             objeto_selecionado++;
         }
@@ -705,6 +884,6 @@ int main(int argc, char **argv)
     cria_menu();
 
     arVideoCapStart();
-    argMainLoop(NULL,keyEvent,mainLoop);
+    argMainLoop(NULL, keyEvent, mainLoop);
     return (0);
 }
