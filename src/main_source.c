@@ -44,6 +44,7 @@ typedef struct
     //parede_esqueda=0,parede_direita=1,parede_fundo=2,chao=3
     bool lugar[LUGARES_NA_SALA];
     ponto_3d posicao, rotacao, escala;
+	double x_padrao, y_padrao, z_padrao;
     int id, tipo, lugar_escolhido;
 } objeto_grafico;
 
@@ -76,7 +77,7 @@ void desenha_objeto(int tipo_do_objeto);
 void desenha_cubo();
 void desenha_mesa();
 void desenha_cadeira(float x, float y, float z, float degrees);
-void desenha_quadro();
+void desenha_quadro(int arg_lugar);
 void cria_menu(void);
 void menu(int acao);
 static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista);
@@ -168,6 +169,9 @@ void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala
     objeto_grafico objeto_aux;
 
     objeto_aux.posicao = arg_posicao;
+	objeto_aux.x_padrao = arg_posicao.x;
+	objeto_aux.y_padrao = arg_posicao.y;
+	objeto_aux.z_padrao = arg_posicao.z;
     objeto_aux.rotacao = arg_rotacao;
     objeto_aux.escala = arg_escala;
 
@@ -500,6 +504,15 @@ void menu(int acao)
 
         break;
     }
+	//cria quadro na parede do fundo
+    case 5:
+    {
+        lista_objetos[objeto_selecionado].posicao.x = lista_objetos[objeto_selecionado].x_padrao; 
+		lista_objetos[objeto_selecionado].posicao.y = lista_objetos[objeto_selecionado].y_padrao;
+		lista_objetos[objeto_selecionado].posicao.z = lista_objetos[objeto_selecionado].z_padrao;
+
+        break;
+    }
     }
     glutPostRedisplay();
 }
@@ -524,6 +537,7 @@ void cria_menu(void)
 
     menu_principal = glutCreateMenu(menu);
     glutAddSubMenu("Criar um novo objeto", menu_objetos);
+	glutAddMenuEntry("Reposicionar objeto", 5);
     glutAddMenuEntry("Sair", -1);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
@@ -598,6 +612,13 @@ static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto
 
     //aplica a translação relativa entre marcador e objeto
     glTranslatef(x_relativo, y_relativo, z_relativo);
+
+    //tentativa de máscara
+	//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+    //glClearColor(0.0, 0.0, 0.0, 1.0);
+    //glClear(GL_COLOR_BUFFER_BIT);
+    //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     //desenha objeto
     if (!arDebug)
