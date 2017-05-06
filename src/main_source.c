@@ -27,9 +27,9 @@
 //constantes
 #define MAXIMO_OBJETOS 20
 #define LUGARES_NA_SALA 4
-#define X_PAREDE_DA_ESQUERDA -10
-#define X_PAREDE_DA_DIREITA 220
-#define Y_PAREDE_DO_FUNDO 10
+#define X_PAREDE_DA_ESQUERDA -35
+#define X_PAREDE_DA_DIREITA 275
+#define Y_PAREDE_DO_FUNDO 0
 #define Z_CHAO 0
 
 //estrutura ponto_3d
@@ -44,7 +44,7 @@ typedef struct
     //parede_esqueda=0,parede_direita=1,parede_fundo=2,chao=3
     bool lugar[LUGARES_NA_SALA];
     ponto_3d posicao, rotacao, escala;
-    int id, tipo;
+    int id, tipo, lugar_escolhido;
 } objeto_grafico;
 
 //variáveis globais
@@ -75,6 +75,7 @@ void remove_objeto(int id_objeto);
 void desenha_objeto(int tipo_do_objeto);
 void desenha_cubo();
 void desenha_mesa();
+void desenha_cadeira(float x, float y, float z, float degrees);
 void desenha_quadro();
 void cria_menu(void);
 void menu(int acao);
@@ -182,6 +183,8 @@ void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala
     }
     objeto_aux.lugar[arg_lugar] = TRUE;
 
+	objeto_aux.lugar_escolhido = arg_lugar;
+
     adiciona_objeto(objeto_aux);
 }
 
@@ -223,9 +226,12 @@ void remove_objeto(int id_objeto)
 /**
  * desenha um objeto
  */
-void desenha_objeto(int tipo_do_objeto)
+void desenha_objeto(int posicao_lista_objetos)
 {
-    switch (tipo_do_objeto)
+	int tipo_objeto = lista_objetos[posicao_lista_objetos].tipo;
+	int lugar = lista_objetos[posicao_lista_objetos].lugar_escolhido;
+
+    switch (tipo_objeto)
     {
     //cadeira
     case 0:
@@ -242,7 +248,7 @@ void desenha_objeto(int tipo_do_objeto)
     //quadro
     case 2:
     {
-        desenha_quadro();
+        desenha_quadro(lugar);
         break;
     }
     }
@@ -253,6 +259,11 @@ void desenha_objeto(int tipo_do_objeto)
  */
 void desenha_cadeira(float x, float y, float z, float degrees)
 {
+    glPushMatrix();
+	glScalef(5,5,5);
+	glRotatef(90,1,0,0);
+	glRotatef(90,0,1,0);
+
     glPushMatrix();
     glTranslatef(x, y, z);
     glRotatef(degrees, 0.0f, 1.0f, 0.0f);
@@ -308,6 +319,8 @@ void desenha_cadeira(float x, float y, float z, float degrees)
     glPopMatrix();
 
     glPopMatrix();
+
+    glPopMatrix();
 }
 
 /**
@@ -315,6 +328,13 @@ void desenha_cadeira(float x, float y, float z, float degrees)
  */
 void desenha_mesa()
 {
+	float valor_escala = 7;
+
+	glPushMatrix();
+	glScalef(valor_escala,valor_escala,valor_escala);
+	glTranslatef(-10, 25, 0);
+	glRotatef(90,1,0,0);
+
     glPushMatrix();
     glTranslatef(2.0f, 0.0f, 3.0f);
 
@@ -344,22 +364,70 @@ void desenha_mesa()
     glPopMatrix();
 
     glPopMatrix();
+
+	glPopMatrix();
 }
 
 /**
  * desenha um quadro
  */
-void desenha_quadro()
+void desenha_quadro(int arg_lugar)
 {
-    glPushMatrix();
-    glTranslatef(2.0f, 0.0f, 3.0f);
+    float valor = 2.5;
 
-    glPushMatrix();
-    glTranslatef(5.0f, 3.0f, 20.0f);
-    desenhaCubo(0.5f, 10, 10);
-    glPopMatrix();
+	if(arg_lugar == 0)
+	{
+		glPushMatrix();
+		glScalef(valor,valor,valor);
+		glRotatef(90,0,0,1);
 
-    glPopMatrix();
+		glPushMatrix();
+		glTranslatef(2.0f, 0.0f, 3.0f);
+
+		glPushMatrix();
+		glTranslatef(5.0f, 3.0f, 20.0f);
+		desenhaCubo(0.5f, 10, 10);
+		glPopMatrix();
+
+		glPopMatrix();
+
+		glPopMatrix();
+	}
+	else if(arg_lugar == 1)
+	{
+		glPushMatrix();
+		glScalef(valor,valor,valor);
+		glRotatef(-90,0,0,1);
+
+		glPushMatrix();
+		glTranslatef(2.0f, 0.0f, 3.0f);
+
+		glPushMatrix();
+		glTranslatef(5.0f, 3.0f, 20.0f);
+		desenhaCubo(0.5f, 10, 10);
+		glPopMatrix();
+
+		glPopMatrix();
+
+		glPopMatrix();
+	}
+	else if(arg_lugar == 2)
+	{
+		glPushMatrix();
+		glScalef(valor,valor,valor);
+
+		glPushMatrix();
+		glTranslatef(2.0f, 0.0f, 3.0f);
+
+		glPushMatrix();
+		glTranslatef(5.0f, 3.0f, 20.0f);
+		desenhaCubo(0.5f, 10, 10);
+		glPopMatrix();
+
+		glPopMatrix();
+
+		glPopMatrix();
+	}
 }
 
 /**
@@ -400,8 +468,8 @@ void menu(int acao)
     case 1:
     {
         tipo = 0;
-        lugar = 2;
-        cria_objeto(posicao_default_parede_do_fundo, rotacao_aux, escala_aux, tipo, lugar);
+        lugar = 3;
+        cria_objeto(posicao_default_chao, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
     }
@@ -534,11 +602,11 @@ static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto
     //desenha objeto
     if (!arDebug)
     {
-        desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
+        desenha_objeto(posicao_do_objeto_na_lista);
     }
     else
     {
-        desenha_objeto(lista_objetos[posicao_do_objeto_na_lista].tipo);
+        desenha_objeto(posicao_do_objeto_na_lista);
     }
 
     glDisable(GL_LIGHTING);
@@ -625,12 +693,14 @@ static void mainLoop(void)
     for (i = 0; i < config->marker_num; i++)
     {
         //se o marcador i foi capturado no frame
-        if (config->marker[i].visible >= 0)
+        if ((config->marker[i].visible >= 0) && (marker_info->id == i))
         {
             int posicao_objeto;
 
-            //if(i==0){printf("RECONHECEU A!!!\n");}
-            //if(i==6){printf("RECONHECEU KANJI!!!\n");}
+            //if(i==6){printf("RECONHECEU SAMPLE 1!!! %d\n",marker_info->id);glRotatef(90,0,1,0);}
+            //if(i==7){printf("RECONHECEU HIRO!!! %d\n",marker_info->id);}
+			//if(i==8){printf("RECONHECEU SAMPLE 2!!! %d\n",marker_info->id);}
+            //if(i==9){printf("RECONHECEU KANJI!!! %d\n",marker_info->id);}
 
             //desenha todos os objetos de maneira relativa ao marcador i
             for (posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
@@ -688,19 +758,19 @@ static void init(void)
 
     //define posições padrões
     posicao_default_parede_da_esquerda.x = X_PAREDE_DA_ESQUERDA;
-    posicao_default_parede_da_esquerda.y = 0;
-    posicao_default_parede_da_esquerda.z = 0;
+    posicao_default_parede_da_esquerda.y = -100;
+    posicao_default_parede_da_esquerda.z = 40;
 
     posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
-    posicao_default_parede_da_esquerda.y = 0;
-    posicao_default_parede_da_esquerda.z = 0;
+    posicao_default_parede_da_esquerda.y = -100;
+    posicao_default_parede_da_esquerda.z = 40;
 
-    posicao_default_parede_do_fundo.x = 0;
+    posicao_default_parede_do_fundo.x = 137;
     posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
-    posicao_default_parede_do_fundo.z = 0;
+    posicao_default_parede_do_fundo.z = 40;
 
-    posicao_default_chao.x = 0;
-    posicao_default_chao.z = 0;
+    posicao_default_chao.x = 137;
+    posicao_default_chao.y = -110;
     posicao_default_chao.z = Z_CHAO;
 }
 
