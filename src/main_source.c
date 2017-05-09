@@ -1,28 +1,44 @@
 /**
- * PUCRS - FACIN
- * Computação Gráfica II - Trabalho I
+ * Universidade: PUCRS
+ * Unidade: FACIN
+ * Curso: Bacharelado em Ciência da Computação
+ * Disciplina: Computação Gráfica II
+ * Turma: 128
+ * Trabalho: Trbalho I
+ * Alunos: Emanoel Vianna, Gabriell Araujo
  *
  * teclas:
- * w,a,s,d: mover objeto
- * e: selecionar próximo objeto
- * q: selecionar objeto anterior
- * r: deletar objeto já selecionado
- * esc: sair do programa
+ * w,a,s,d: move objeto selecionado
+ * e: seleciona próximo objeto
+ * q: seleciona objeto anterior
+ * r: deleta objeto já selecionado
+ * esc: encerra o programa
+ *
+ * mouse:
+ * botão direito: abre menu
  */
 
+#ifdef _WIN32
+#include <windows.h>
+#include <VideoIM.h>
+#endif
+
+#ifndef __APPLE__
+#include <GL/gl.h>
+#include <GL/glut.h>
+#else
+#include <OpenGL/gl.h>
+#include <GLUT/glut.h>
+#endif
+
 #include <AR/arMulti.h>
-#include <AR/config.h>
 #include <AR/video.h>
 #include <AR/param.h>
 #include <AR/gsub.h>
 #include <AR/ar.h>
-#include <GL/gl.h>
-#include <GL/glut.h>
-#include <windows.h>
-#include <VideoIM.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 //constantes
 #define MAXIMO_OBJETOS 20
@@ -48,8 +64,13 @@ typedef struct
     int id, tipo, lugar_escolhido;
 } objeto_grafico;
 
-//variáveis globais
+#ifdef _WIN32
 char *vconf = "Data\\WDM_camera_flipV.xml";
+#else
+char *vconf = "";
+#endif
+
+//variáveis globais
 char *cparam_name = "Data/camera_para.dat";
 char *config_name = "Data/multi/marker.dat";
 ARMultiMarkerInfoT *config;
@@ -61,8 +82,7 @@ int gerador_id = 0;
 int contador_objetos = 0;
 int objeto_selecionado = 0;
 objeto_grafico lista_objetos[MAXIMO_OBJETOS];
-int texture[3][1];
-bool exiteCenario = false;
+bool mostrar_paredes_e_chao = TRUE;
 
 //posições padrões
 ponto_3d posicao_default_parede_da_esquerda;
@@ -75,13 +95,16 @@ void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala
 void adiciona_objeto(objeto_grafico novo_objeto);
 void remove_objeto(int id_objeto);
 void desenha_objeto(int tipo_do_objeto);
-void desenha_cubo();
+void desenhaCubo(float height, float width, float depth);
 void desenha_mesa();
 void desenha_cadeira(float x, float y, float z, float degrees);
 void desenha_quadro(int arg_lugar);
+void desenha_parede(int arg_lugar);
+void desenha_chao();
 void cria_menu(void);
 void menu(int acao);
 static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto_na_lista);
+static void draw_objetos_estaticos(double trans1[3][4], double trans2[3][4]);
 static void mainLoop(void);
 static void init(void);
 static void cleanup(void);
@@ -154,7 +177,38 @@ void remove_objeto(int id_objeto)
 }
 
 /**
- * funcao auxiliar para criar a mesa
+ * desenha um objeto
+ */
+void desenha_objeto(int posicao_lista_objetos)
+{
+    int tipo_objeto = lista_objetos[posicao_lista_objetos].tipo;
+    int lugar = lista_objetos[posicao_lista_objetos].lugar_escolhido;
+
+    switch(tipo_objeto)
+    {
+    //cadeira
+    case 0:
+    {
+        desenha_cadeira(35.f, 0.f, 10.f, 270.f);
+        break;
+    }
+    //mesa
+    case 1:
+    {
+        desenha_mesa();
+        break;
+    }
+    //quadro
+    case 2:
+    {
+        desenha_quadro(lugar);
+        break;
+    }
+    }
+}
+
+/**
+ * desenha um cubo
  */
 void desenhaCubo(float height, float width, float depth)
 {
@@ -229,83 +283,14 @@ void desenhaCubo(float height, float width, float depth)
 }
 
 /**
- * desenha um objeto
- */
-void desenha_objeto(int posicao_lista_objetos)
-{
-    int tipo_objeto = lista_objetos[posicao_lista_objetos].tipo;
-    int lugar = lista_objetos[posicao_lista_objetos].lugar_escolhido;
-
-    switch (tipo_objeto)
-    {
-    /** cadeira **/
-    case 0:
-    {
-        desenha_cadeira(35.f, 0.f, 10.f, 270.f);
-        break;
-    }
-    /** mesa **/
-    case 1:
-    {
-        desenha_mesa();
-        break;
-    }
-    /** quadro **/
-    case 2:
-    {
-        desenha_quadro(lugar);
-        break;
-    }
-    /** chao **/
-    case 3:
-    {
-        desenha_chao();
-        break;
-    }
-    /** parede do fundo **/
-    case 4:
-    {
-        desenha_parede(lugar);
-        break;
-    }
-    }
-}
-
-/**
- * desenha no cenario
- */
-
-void desenha_cenario(int tipo, int lugar)
-{
-    if (exiteCenario)
-    {
-        switch (tipo)
-        {
-        //chao
-        case 0:
-        {
-            desenha_chao();
-            break;
-        }
-        //parede
-        case 1:
-        {
-            desenha_parede(lugar);
-            break;
-        }
-        }
-    }
-}
-
-/**
  * desenha uma cadeira
  */
 void desenha_cadeira(float x, float y, float z, float degrees)
 {
     glPushMatrix();
-    glScalef(5, 5, 5);
-    glRotatef(90, 1, 0, 0);
-    glRotatef(90, 0, 1, 0);
+    glScalef(5,5,5);
+    glRotatef(90,1,0,0);
+    glRotatef(90,0,1,0);
 
     glPushMatrix();
     glTranslatef(x, y, z);
@@ -374,9 +359,9 @@ void desenha_mesa()
     float valor_escala = 7;
 
     glPushMatrix();
-    glScalef(valor_escala, valor_escala, valor_escala);
+    glScalef(valor_escala,valor_escala,valor_escala);
     glTranslatef(-10, 25, 0);
-    glRotatef(90, 1, 0, 0);
+    glRotatef(90,1,0,0);
 
     glPushMatrix();
     glTranslatef(2.0f, 0.0f, 3.0f);
@@ -418,11 +403,12 @@ void desenha_quadro(int arg_lugar)
 {
     float valor = 2.5;
 
-    if (arg_lugar == 0) // esquerda
+    //parede da esquerda
+    if(arg_lugar == 0)
     {
         glPushMatrix();
-        glScalef(valor, valor, valor);
-        glRotatef(90, 0, 0, 1);
+        glScalef(valor,valor,valor);
+        glRotatef(90,0,0,1);
 
         glPushMatrix();
         glTranslatef(2.0f, 0.0f, 3.0f);
@@ -436,11 +422,12 @@ void desenha_quadro(int arg_lugar)
 
         glPopMatrix();
     }
-    else if (arg_lugar == 1) // direita
+    //parede da direita
+    else if(arg_lugar == 1)
     {
         glPushMatrix();
-        glScalef(valor, valor, valor);
-        glRotatef(-90, 0, 0, 1);
+        glScalef(valor,valor,valor);
+        glRotatef(-90,0,0,1);
 
         glPushMatrix();
         glTranslatef(2.0f, 0.0f, 3.0f);
@@ -454,10 +441,11 @@ void desenha_quadro(int arg_lugar)
 
         glPopMatrix();
     }
-    else if (arg_lugar == 2) // fundo
+    //parede do fundo
+    else if(arg_lugar == 2)
     {
         glPushMatrix();
-        glScalef(valor, valor, valor);
+        glScalef(valor,valor,valor);
 
         glPushMatrix();
         glTranslatef(2.0f, 0.0f, 3.0f);
@@ -474,75 +462,99 @@ void desenha_quadro(int arg_lugar)
 }
 
 /**
- * desenha um parede
+ * desenha uma parede
  */
 void desenha_parede(int arg_lugar)
 {
-    if (arg_lugar == 0) // esquerda
+    float color_x = 0.59;
+    float color_y = 0.59;
+    float color_z = 0.59;
+
+    //parede da esquerda
+    if (arg_lugar == 0)
     {
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
-        glTranslatef(posicao_default_parede_da_esquerda.x, posicao_default_parede_da_esquerda.y, posicao_default_parede_da_esquerda.z);
-        glRotatef(90, 0, 0, 1);
-        glScalef(5, 60, 60); //TODO: Modificar para o seu tamanho de caixa
+        glTranslatef(-20,0,30);
+        glRotatef(180, 0, 0, 1);
+        glColor3f(color_x, color_y, color_z);
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 100, 70);
         glutSolidCube(3);
         glPopMatrix();
     }
-    else if (arg_lugar == 1) // direita
+    //parede da direita
+    else if (arg_lugar == 1)
     {
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
-        glTranslatef(posicao_default_parede_da_direita.x, posicao_default_parede_da_direita.y, posicao_default_parede_da_direita.z);
-        glRotatef(-90, 0, 0, 1);
-        glScalef(5, 60, 60); //TODO: Modificar para o seu tamanho de caixa
+        glTranslatef(50,0,30);
+        glRotatef(180, 0, 0, 1);
+        glColor3f(color_x, color_y, color_z);
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 100, 70);
         glutSolidCube(3);
         glPopMatrix();
     }
-    else if (arg_lugar == 2) // fundo
+    //parede do fundo
+    else if (arg_lugar == 2) //fundo
     {
-        // acima
+        int desloca_x = 150;
+
+        //parte de cima
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
+        glTranslatef(desloca_x,0,0);
+        glColor3f(color_x, color_y, color_z);
         glTranslatef(2.0f, 0.0f, 10.0f);
         glRotated(90, 0, 0, 1);
-        glScalef(5, 90.0f, 10); //TODO: Modificar para o seu tamanho de caixa
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 100.0f, 50);
         glutSolidCube(3);
         glPopMatrix();
-        // abaixo
+        //parte de baixo
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
+        glTranslatef(desloca_x,0,50);
+        glColor3f(color_x, color_y, color_z);
         glTranslatef(2.0f, 0.0f, 90.0f);
         glRotated(90, 0, 0, 1);
-        glScalef(5, 90.0f, 10); //TODO: Modificar para o seu tamanho de caixa
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 100.0f, 10);
         glutSolidCube(3);
         glPopMatrix();
-        //esquerda
+        //parte da esquerda
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
+        glTranslatef(desloca_x,0,0);
+        glColor3f(color_x, color_y, color_z);
         glTranslatef(-90.0f, 0.0f, 50.0f);
         glRotated(90, 0, 0, 1);
-        glScalef(5, 29.0f, 20); //TODO: Modificar para o seu tamanho de caixa
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 40.0f, 70);
         glutSolidCube(3);
         glPopMatrix();
-        //direita
+        //parte da direita
         glPushMatrix();
-        glColor3f(0.5f, 0.35f, 0.05f);
+        glTranslatef(desloca_x + 40,0,0);
+        glColor3f(color_x, color_y, color_z);
         glTranslatef(90.0f, 0.0f, 50.0f);
         glRotated(90, 0, 0, 1);
-        glScalef(5, 30.5f, 20); //TODO: Modificar para o seu tamanho de caixa
+        //ajuste conforme tamanho da caixa
+        glScalef(5, 40.0f, 70);
         glutSolidCube(3);
         glPopMatrix();
     }
 }
 
 /**
- * desenha chao
+ * desenha um chão
  */
 void desenha_chao()
 {
+    float color_x = 0.59;
+    float color_y = 0.59;
+    float color_z = 0.59;
+
     glPushMatrix();
-    glColor3f(0.75f, 0.75f, 0.750f);
-    glScalef(230.0f, 200.0f, 0);
+    glTranslatef(150, 0, -50);
+    glColor3f(color_x, color_y, color_z);
+    glScalef(550.0f, 350.0f, 0);
     glutSolidCube(1);
     glPopMatrix();
 }
@@ -617,7 +629,7 @@ void menu(int acao)
 
         break;
     }
-    //reposicionar objetos
+    //cria quadro na parede do fundo
     case 5:
     {
         lista_objetos[objeto_selecionado].posicao.x = lista_objetos[objeto_selecionado].x_padrao;
@@ -626,39 +638,22 @@ void menu(int acao)
 
         break;
     }
+    //mostrar/ocultar paredes
     case 6:
     {
-        tipo = 3; // chao
-        lugar = 3;
-        cria_objeto(posicao_default_chao, rotacao_aux, escala_aux, tipo, lugar);
-
-        break;
-    }
-    case 7:
-    {
-        tipo = 4; // parede
-        lugar = 0;
-        cria_objeto(posicao_default_parede_da_esquerda, rotacao_aux, escala_aux, tipo, lugar);
-
-        break;
-    }
-    case 8:
-    {
-        tipo = 4; // parede
-        lugar = 1;
-        cria_objeto(posicao_default_parede_da_direita, rotacao_aux, escala_aux, tipo, lugar);
-
-        break;
-    }
-    case 9:
-    {
-        tipo = 4; // parede
-        lugar = 2;
-        cria_objeto(posicao_default_parede_do_fundo, rotacao_aux, escala_aux, tipo, lugar);
+        if(mostrar_paredes_e_chao == TRUE)
+        {
+            mostrar_paredes_e_chao = FALSE;
+        }
+        else if(mostrar_paredes_e_chao == FALSE)
+        {
+            mostrar_paredes_e_chao = TRUE;
+        }
 
         break;
     }
     }
+
     glutPostRedisplay();
 }
 
@@ -667,7 +662,8 @@ void menu(int acao)
  */
 void cria_menu(void)
 {
-    int menu_principal, menu_objetos, menu_cenario, menu_posicoes_quadro;
+    int menu_principal, menu_objetos;
+    int menu_posicoes_quadro;
 
     menu_posicoes_quadro = glutCreateMenu(menu);
     glutAddMenuEntry("Parede da Esquerda", 2);
@@ -679,16 +675,10 @@ void cria_menu(void)
     glutAddMenuEntry("Cadeira", 1);
     glutAddMenuEntry("Mesa", 0);
 
-    menu_cenario = glutCreateMenu(menu);
-    glutAddMenuEntry("Chao", 6);
-    glutAddMenuEntry("Parede da Esquerda", 7);
-    glutAddMenuEntry("Parede da Direita", 8);
-    glutAddMenuEntry("Parede do Fundo", 9);
-
     menu_principal = glutCreateMenu(menu);
     glutAddSubMenu("Criar um novo objeto", menu_objetos);
     glutAddMenuEntry("Reposicionar objeto", 5);
-    glutAddSubMenu("Mostrar cenario", menu_cenario);
+    glutAddMenuEntry("Mostrar/ocultar paredes", 6);
     glutAddMenuEntry("Sair", -1);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
@@ -764,30 +754,115 @@ static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto
     //aplica a translação relativa entre marcador e objeto
     glTranslatef(x_relativo, y_relativo, z_relativo);
 
-    //tentativa de máscara
-    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-    //glClearColor(0.0, 0.0, 0.0, 1.0);
-    //glClear(GL_COLOR_BUFFER_BIT);
-    //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
     //desenha objeto
-    if (!arDebug)
-    {
-        desenha_objeto(posicao_do_objeto_na_lista);
-    }
-    else
-    {
-        desenha_objeto(posicao_do_objeto_na_lista);
-    }
+    desenha_objeto(posicao_do_objeto_na_lista);
 
     glDisable(GL_LIGHTING);
-
     glDisable(GL_DEPTH_TEST);
 }
 
 /**
- * main loop
+ * chama as funções de desenho para os objetos estáticos (chão, paredes e externos)
+ */
+static void draw_objetos_estaticos(double trans1[3][4], double trans2[3][4])
+{
+    //faz leitura das coordenadas do marcador
+    double x_marcador = trans2[0][3];
+    double y_marcador = trans2[1][3];
+    double z_marcador = trans2[2][3];
+
+    double gl_para[16];
+    GLfloat mat_ambient[] = {0.0, 0.0, 1.0, 1.0};
+    GLfloat mat_ambient1[] = {1.0, 0.0, 0.0, 1.0};
+    GLfloat mat_ambient_x[] = {1.0, 1.0, 1.0, 0.0};
+    GLfloat mat_flash[] = {0.0, 0.0, 1.0, 1.0};
+    GLfloat mat_flash1[] = {1.0, 0.0, 0.0, 1.0};
+    GLfloat mat_flash_x[] = {3.0, 3.0, 3.0, 3.0};
+    GLfloat mat_flash_shiny[] = {50.0};
+    GLfloat mat_flash_shiny1[] = {50.0};
+    GLfloat mat_flash_shiny_x[] = {100.0};
+    GLfloat light_position[] = {100.0, -200.0, 200.0, 0.0};
+    GLfloat ambi[] = {0.1, 0.1, 0.1, 0.1};
+    GLfloat lightZeroColor[] = {0.9, 0.9, 0.9, 0.1};
+
+    argDrawMode3D();
+    argDraw3dCamera(0, 0);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    //load the camera transformation matrix
+    glMatrixMode(GL_MODELVIEW);
+    argConvGlpara(trans1, gl_para);
+    glLoadMatrixd(gl_para);
+    argConvGlpara(trans2, gl_para);
+    glMultMatrixd(gl_para);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambi);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_flash_x);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_flash_shiny_x);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient_x);
+
+    glMatrixMode(GL_MODELVIEW);
+
+    //desenha chão
+    glPushMatrix();
+    glTranslatef(X_PAREDE_DA_ESQUERDA - x_marcador, Y_PAREDE_DO_FUNDO - y_marcador, Z_CHAO - z_marcador);
+    desenha_chao();
+    glPopMatrix();
+
+    //abre região de oclusão
+    if(mostrar_paredes_e_chao == FALSE)
+    {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    }
+
+    //desenha parede da esquerda
+    glPushMatrix();
+    glTranslatef(X_PAREDE_DA_ESQUERDA - x_marcador, Y_PAREDE_DO_FUNDO - y_marcador, Z_CHAO - z_marcador);
+    desenha_parede(0);
+    glPopMatrix();
+
+    //desenha parede da direita
+    glPushMatrix();
+    glTranslatef(X_PAREDE_DA_DIREITA - x_marcador, Y_PAREDE_DO_FUNDO - y_marcador, Z_CHAO - z_marcador);
+    desenha_parede(1);
+    glPopMatrix();
+
+    //desenha parede do fundo
+    glPushMatrix();
+    glTranslatef(X_PAREDE_DA_ESQUERDA - x_marcador, Y_PAREDE_DO_FUNDO - y_marcador, Z_CHAO - z_marcador);
+    glTranslatef(0,100,0);
+    desenha_parede(2);
+    glPopMatrix();
+
+    //fecha região de oclusão
+    if(mostrar_paredes_e_chao == FALSE)
+    {
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    }
+
+    //desenha cubo atrás da sala
+    glPushMatrix();
+    glTranslatef((0) - x_marcador, (1000) - y_marcador, Z_CHAO - z_marcador);
+    glutSolidCube(400);
+    glPopMatrix();
+
+    //desenha cubo no lado esquerdo da sala
+    glPushMatrix();
+    glTranslatef((-400) - x_marcador, Y_PAREDE_DO_FUNDO - y_marcador, Z_CHAO - z_marcador);
+    glutSolidCube(250);
+    glPopMatrix();
+
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+}
+
+/**
+ * captura um frame, identifica marcadores visíveis e chama as funções draw
  */
 static void mainLoop(void)
 {
@@ -864,17 +939,16 @@ static void mainLoop(void)
     //passa por todos os marcadores
     for (i = 0; i < config->marker_num; i++)
     {
-        //se o marcador i foi capturado no frame
-        if ((config->marker[i].visible >= 0) && (marker_info->id == i))
+        //se o marcador i está visível no frame
+        //if ((config->marker[i].visible >= 0) && (marker_info->id == i))
+        if (config->marker[i].visible >= 0)
         {
             int posicao_objeto;
 
-            //if(i==6){printf("RECONHECEU SAMPLE 1!!! %d\n",marker_info->id);glRotatef(90,0,1,0);}
-            //if(i==7){printf("RECONHECEU HIRO!!! %d\n",marker_info->id);}
-            //if(i==8){printf("RECONHECEU SAMPLE 2!!! %d\n",marker_info->id);}
-            //if(i==9){printf("RECONHECEU KANJI!!! %d\n",marker_info->id);}
+            //desenha objetos estaticos
+            draw_objetos_estaticos(config->trans, config->marker[i].trans);
 
-            /** desenha todos os objetos de maneira relativa ao marcador i **/
+            //desenha todos os objetos de maneira relativa ao marcador i
             for (posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
             {
                 glPushMatrix();
@@ -883,8 +957,6 @@ static void mainLoop(void)
 
                 glPopMatrix();
             }
-
-            /** desenha os cenarios que estão visiveis **/
         }
     }
 
@@ -936,8 +1008,8 @@ static void init(void)
     posicao_default_parede_da_esquerda.z = 40;
 
     posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
-    posicao_default_parede_da_direita.y = -100;
-    posicao_default_parede_da_direita.z = 40;
+    posicao_default_parede_da_esquerda.y = -100;
+    posicao_default_parede_da_esquerda.z = 40;
 
     posicao_default_parede_do_fundo.x = 137;
     posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
@@ -949,7 +1021,7 @@ static void init(void)
 }
 
 /**
- * efetua procedimentos necessários antes de encerrar o programa
+ * efetua procedimentos necessários para o encerramento do programa
  */
 static void cleanup(void)
 {
@@ -963,166 +1035,157 @@ static void cleanup(void)
  */
 static void keyEvent(unsigned char tecla, int x, int y)
 {
-    int tipo_objeto = lista_objetos[objeto_selecionado].tipo;
-    int id_do_objeto_a_ser_removido;
-
-    switch (tecla)
-    {
     //ESC => encerra programa
-    case 0x1b:
+    if (tecla == 0x1b)
+    {
         cleanup();
         exit(0);
-        break;
-    //DELETE => deleta objeto selecionado
-    case 'r':
-        id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
+    }
+    //r => deleta objeto selecionado
+    else if (tecla == 'r' || tecla == 'R')
+    {
+        int id_do_objeto_a_ser_removido = lista_objetos[objeto_selecionado].id;
         remove_objeto(id_do_objeto_a_ser_removido);
-        break;
-    //LEFT ARROW => movimenta objeto
-    case 'a':
-        if (tipo_objeto != 3 && tipo_objeto != 4)
+    }
+    //a => movimenta objeto
+    else if (tecla == 'a' || tecla == 'A')
+    {
+        //se o objeto está na parede da esquerda, z--
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
         {
-            //se o objeto está na parede da esquerda, z--
-            if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está na parede da direita, z--
-            else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está na parede do fundo, x--
-            else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.x = novo_valor;
-            }
-            //se o objeto está no chão, x--
-            else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.x = novo_valor;
-            }
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
-        break;
-    //RIGHT ARROW => movimenta objeto
-    case 'd':
-        if (tipo_objeto != 3 && tipo_objeto != 4)
+        //se o objeto está na parede da direita, z--
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
         {
-            //se o objeto está na parede da esquerda, z++
-            if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está na parede da direita, z++
-            else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está na parede do fundo, x++
-            else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.x = novo_valor;
-            }
-            //se o objeto está no chão, x++
-            else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.x = novo_valor;
-            }
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
         }
-        break;
-    //UP ARROW => movimenta objeto
-    case 'w':
-        if (tipo_objeto != 3 && tipo_objeto != 4)
+        //se o objeto está na parede do fundo, x--
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
         {
-            //se o objeto está na parede da esquerda, y++
-            if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
-            //se o objeto está na parede da direita, y++
-            else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
-            //se o objeto está na parede do fundo, z++
-            else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está no chão, y++
-            else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor++;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
         }
-        break;
-    //DOWN ARROW => movimenta objeto
-    case 's':
-        if (tipo_objeto != 3 && tipo_objeto != 4)
+        //se o objeto está no chão, x--
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
         {
-            //se o objeto está na parede da esquerda, y--
-            if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
-            //se o objeto está na parede da direita, y--
-            else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
-            //se o objeto está na parede do fundo, z--
-            else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.z = novo_valor;
-            }
-            //se o objeto está no chão, y--
-            else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
-            {
-                double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
-                novo_valor--;
-                lista_objetos[objeto_selecionado].posicao.y = novo_valor;
-            }
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
         }
-        break;
-    //PAGE DOWN => seleciona objeto anterior
-    case 'q':
+    }
+    //d => movimenta objeto
+    else if (tecla == 'd' || tecla == 'D')
+    {
+        //se o objeto está na parede da esquerda, z++
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede da direita, z++
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está na parede do fundo, x++
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        }
+        //se o objeto está no chão, x++
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.x;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.x = novo_valor;
+        }
+    }
+    //w => movimenta objeto
+    else if (tecla == 'w' || tecla == 'W')
+    {
+        //se o objeto está na parede da esquerda, y++
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede da direita, y++
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede do fundo, z++
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está no chão, y++
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor++;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+    }
+    //s => movimenta objeto
+    else if (tecla == 's' || tecla == 'S')
+    {
+        //se o objeto está na parede da esquerda, y--
+        if (lista_objetos[objeto_selecionado].lugar[0] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede da direita, y--
+        else if (lista_objetos[objeto_selecionado].lugar[1] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+        //se o objeto está na parede do fundo, z--
+        else if (lista_objetos[objeto_selecionado].lugar[2] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.z;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.z = novo_valor;
+        }
+        //se o objeto está no chão, y--
+        else if (lista_objetos[objeto_selecionado].lugar[3] == TRUE)
+        {
+            double novo_valor = lista_objetos[objeto_selecionado].posicao.y;
+            novo_valor--;
+            lista_objetos[objeto_selecionado].posicao.y = novo_valor;
+        }
+    }
+    //q => seleciona objeto anterior
+    else if (tecla == 'q' || tecla == 'Q')
+    {
         if (objeto_selecionado > 0)
         {
             objeto_selecionado--;
         }
-        break;
-    //PAGE UP => seleciona próximo objeto
-    case 'e':
+    }
+    //e => seleciona próximo objeto
+    else if (tecla == 'e')
+    {
         if (objeto_selecionado < contador_objetos - 1)
         {
             objeto_selecionado++;
@@ -1130,6 +1193,9 @@ static void keyEvent(unsigned char tecla, int x, int y)
     }
 }
 
+/**
+ * função main
+ */
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
