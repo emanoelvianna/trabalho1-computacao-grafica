@@ -44,7 +44,7 @@ typedef struct
     //parede_esqueda=0,parede_direita=1,parede_fundo=2,chao=3
     bool lugar[LUGARES_NA_SALA];
     ponto_3d posicao, rotacao, escala;
-	double x_padrao, y_padrao, z_padrao;
+    double x_padrao, y_padrao, z_padrao;
     int id, tipo, lugar_escolhido;
 } objeto_grafico;
 
@@ -62,6 +62,7 @@ int contador_objetos = 0;
 int objeto_selecionado = 0;
 objeto_grafico lista_objetos[MAXIMO_OBJETOS];
 int texture[3][1];
+bool exiteCenario = false;
 
 //posições padrões
 ponto_3d posicao_default_parede_da_esquerda;
@@ -85,6 +86,72 @@ static void mainLoop(void);
 static void init(void);
 static void cleanup(void);
 static void keyEvent(unsigned char key, int x, int y);
+
+/**
+ * cria um objeto e o adiciona na lista de objetos
+ */
+void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala, int arg_tipo, int arg_lugar)
+{
+    objeto_grafico objeto_aux;
+
+    objeto_aux.posicao = arg_posicao;
+    objeto_aux.x_padrao = arg_posicao.x;
+    objeto_aux.y_padrao = arg_posicao.y;
+    objeto_aux.z_padrao = arg_posicao.z;
+    objeto_aux.rotacao = arg_rotacao;
+    objeto_aux.escala = arg_escala;
+
+    gerador_id++;
+    objeto_aux.id = gerador_id;
+
+    objeto_aux.tipo = arg_tipo;
+
+    int i;
+    for (i = 0; i < LUGARES_NA_SALA; i++)
+    {
+        objeto_aux.lugar[i] = FALSE;
+    }
+    objeto_aux.lugar[arg_lugar] = TRUE;
+
+    objeto_aux.lugar_escolhido = arg_lugar;
+
+    adiciona_objeto(objeto_aux);
+}
+
+/**
+ * adiciona um novo objeto na lista de objetos
+ */
+void adiciona_objeto(objeto_grafico novo_objeto)
+{
+    if (contador_objetos < MAXIMO_OBJETOS)
+    {
+        lista_objetos[contador_objetos] = novo_objeto;
+        contador_objetos++;
+    }
+}
+
+/**
+ * remove um objeto da lista de objetos
+ */
+void remove_objeto(int id_objeto)
+{
+    int i, j;
+
+    if (contador_objetos > 0)
+    {
+        for (i = 0; i < contador_objetos; i++)
+        {
+            if (id_objeto == lista_objetos[i].id)
+            {
+                for (j = i; j < contador_objetos - 1; j++)
+                {
+                    lista_objetos[j] = lista_objetos[j + 1];
+                }
+                contador_objetos--;
+            }
+        }
+    }
+}
 
 /**
  * funcao auxiliar para criar a mesa
@@ -162,78 +229,12 @@ void desenhaCubo(float height, float width, float depth)
 }
 
 /**
- * cria um objeto e o adiciona na lista de objetos
- */
-void cria_objeto(ponto_3d arg_posicao, ponto_3d arg_rotacao, ponto_3d arg_escala, int arg_tipo, int arg_lugar)
-{
-    objeto_grafico objeto_aux;
-
-    objeto_aux.posicao = arg_posicao;
-	objeto_aux.x_padrao = arg_posicao.x;
-	objeto_aux.y_padrao = arg_posicao.y;
-	objeto_aux.z_padrao = arg_posicao.z;
-    objeto_aux.rotacao = arg_rotacao;
-    objeto_aux.escala = arg_escala;
-
-    gerador_id++;
-    objeto_aux.id = gerador_id;
-
-    objeto_aux.tipo = arg_tipo;
-
-    int i;
-    for (i = 0; i < LUGARES_NA_SALA; i++)
-    {
-        objeto_aux.lugar[i] = FALSE;
-    }
-    objeto_aux.lugar[arg_lugar] = TRUE;
-
-	objeto_aux.lugar_escolhido = arg_lugar;
-
-    adiciona_objeto(objeto_aux);
-}
-
-/**
- * adiciona um novo objeto na lista de objetos
- */
-void adiciona_objeto(objeto_grafico novo_objeto)
-{
-    if (contador_objetos < MAXIMO_OBJETOS)
-    {
-        lista_objetos[contador_objetos] = novo_objeto;
-        contador_objetos++;
-    }
-}
-
-/**
- * remove um objeto da lista de objetos
- */
-void remove_objeto(int id_objeto)
-{
-    int i, j;
-
-    if (contador_objetos > 0)
-    {
-        for (i = 0; i < contador_objetos; i++)
-        {
-            if (id_objeto == lista_objetos[i].id)
-            {
-                for (j = i; j < contador_objetos - 1; j++)
-                {
-                    lista_objetos[j] = lista_objetos[j + 1];
-                }
-                contador_objetos--;
-            }
-        }
-    }
-}
-
-/**
  * desenha um objeto
  */
 void desenha_objeto(int posicao_lista_objetos)
 {
-	int tipo_objeto = lista_objetos[posicao_lista_objetos].tipo;
-	int lugar = lista_objetos[posicao_lista_objetos].lugar_escolhido;
+    int tipo_objeto = lista_objetos[posicao_lista_objetos].tipo;
+    int lugar = lista_objetos[posicao_lista_objetos].lugar_escolhido;
 
     switch (tipo_objeto)
     {
@@ -255,6 +256,38 @@ void desenha_objeto(int posicao_lista_objetos)
         desenha_quadro(lugar);
         break;
     }
+    //chao
+    case 3:
+    {
+        desenha_chao();
+        break;
+    }
+    }
+}
+
+/**
+ * desenha no cenario
+ */
+
+void desenha_cenario(int tipo, int lugar)
+{
+    if (exiteCenario)
+    {
+        switch (tipo)
+        {
+        //chao
+        case 0:
+        {
+            desenha_chao();
+            break;
+        }
+        //parede
+        case 1:
+        {
+            desenha_parede(lugar);
+            break;
+        }
+        }
     }
 }
 
@@ -264,9 +297,9 @@ void desenha_objeto(int posicao_lista_objetos)
 void desenha_cadeira(float x, float y, float z, float degrees)
 {
     glPushMatrix();
-	glScalef(5,5,5);
-	glRotatef(90,1,0,0);
-	glRotatef(90,0,1,0);
+    glScalef(5, 5, 5);
+    glRotatef(90, 1, 0, 0);
+    glRotatef(90, 0, 1, 0);
 
     glPushMatrix();
     glTranslatef(x, y, z);
@@ -332,12 +365,12 @@ void desenha_cadeira(float x, float y, float z, float degrees)
  */
 void desenha_mesa()
 {
-	float valor_escala = 7;
+    float valor_escala = 7;
 
-	glPushMatrix();
-	glScalef(valor_escala,valor_escala,valor_escala);
-	glTranslatef(-10, 25, 0);
-	glRotatef(90,1,0,0);
+    glPushMatrix();
+    glScalef(valor_escala, valor_escala, valor_escala);
+    glTranslatef(-10, 25, 0);
+    glRotatef(90, 1, 0, 0);
 
     glPushMatrix();
     glTranslatef(2.0f, 0.0f, 3.0f);
@@ -369,7 +402,7 @@ void desenha_mesa()
 
     glPopMatrix();
 
-	glPopMatrix();
+    glPopMatrix();
 }
 
 /**
@@ -379,59 +412,133 @@ void desenha_quadro(int arg_lugar)
 {
     float valor = 2.5;
 
-	if(arg_lugar == 0)
-	{
-		glPushMatrix();
-		glScalef(valor,valor,valor);
-		glRotatef(90,0,0,1);
+    if (arg_lugar == 0)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
+        glRotatef(90, 0, 0, 1);
 
-		glPushMatrix();
-		glTranslatef(2.0f, 0.0f, 3.0f);
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
 
-		glPushMatrix();
-		glTranslatef(5.0f, 3.0f, 20.0f);
-		desenhaCubo(0.5f, 10, 10);
-		glPopMatrix();
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
 
-		glPopMatrix();
+        glPopMatrix();
 
-		glPopMatrix();
-	}
-	else if(arg_lugar == 1)
-	{
-		glPushMatrix();
-		glScalef(valor,valor,valor);
-		glRotatef(-90,0,0,1);
+        glPopMatrix();
+    }
+    else if (arg_lugar == 1)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
+        glRotatef(-90, 0, 0, 1);
 
-		glPushMatrix();
-		glTranslatef(2.0f, 0.0f, 3.0f);
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
 
-		glPushMatrix();
-		glTranslatef(5.0f, 3.0f, 20.0f);
-		desenhaCubo(0.5f, 10, 10);
-		glPopMatrix();
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
 
-		glPopMatrix();
+        glPopMatrix();
 
-		glPopMatrix();
-	}
-	else if(arg_lugar == 2)
-	{
-		glPushMatrix();
-		glScalef(valor,valor,valor);
+        glPopMatrix();
+    }
+    else if (arg_lugar == 2)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
 
-		glPushMatrix();
-		glTranslatef(2.0f, 0.0f, 3.0f);
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
 
-		glPushMatrix();
-		glTranslatef(5.0f, 3.0f, 20.0f);
-		desenhaCubo(0.5f, 10, 10);
-		glPopMatrix();
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
 
-		glPopMatrix();
+        glPopMatrix();
 
-		glPopMatrix();
-	}
+        glPopMatrix();
+    }
+}
+
+/**
+ * desenha um parede
+ */
+void desenha_parede(int arg_lugar)
+{
+    float valor = 2.5;
+
+    if (arg_lugar == 0)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
+        glRotatef(90, 0, 0, 1);
+
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
+
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
+
+        glPopMatrix();
+
+        glPopMatrix();
+    }
+    else if (arg_lugar == 1)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
+        glRotatef(-90, 0, 0, 1);
+
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
+
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
+
+        glPopMatrix();
+
+        glPopMatrix();
+    }
+    else if (arg_lugar == 2)
+    {
+        glPushMatrix();
+        glScalef(valor, valor, valor);
+
+        glPushMatrix();
+        glTranslatef(2.0f, 0.0f, 3.0f);
+
+        glPushMatrix();
+        glTranslatef(5.0f, 3.0f, 20.0f);
+        desenhaCubo(0.5f, 10, 10);
+        glPopMatrix();
+
+        glPopMatrix();
+
+        glPopMatrix();
+    }
+}
+
+/**
+ * desenha chao
+ */
+void desenha_chao()
+{
+    glPushMatrix();
+    glColor3f(0.75f, 0.75f, 0.750f);
+    glScalef(230.0f, 200.0f, 0);
+    glutSolidCube(1);
+    glPopMatrix();
 }
 
 /**
@@ -504,12 +611,20 @@ void menu(int acao)
 
         break;
     }
-	//cria quadro na parede do fundo
+    //cria quadro na parede do fundo
     case 5:
     {
-        lista_objetos[objeto_selecionado].posicao.x = lista_objetos[objeto_selecionado].x_padrao; 
-		lista_objetos[objeto_selecionado].posicao.y = lista_objetos[objeto_selecionado].y_padrao;
-		lista_objetos[objeto_selecionado].posicao.z = lista_objetos[objeto_selecionado].z_padrao;
+        lista_objetos[objeto_selecionado].posicao.x = lista_objetos[objeto_selecionado].x_padrao;
+        lista_objetos[objeto_selecionado].posicao.y = lista_objetos[objeto_selecionado].y_padrao;
+        lista_objetos[objeto_selecionado].posicao.z = lista_objetos[objeto_selecionado].z_padrao;
+
+        break;
+    }
+    case 6:
+    {
+        tipo = 3; // chao
+        lugar = 3;
+        cria_objeto(posicao_default_chao, rotacao_aux, escala_aux, tipo, lugar);
 
         break;
     }
@@ -522,8 +637,7 @@ void menu(int acao)
  */
 void cria_menu(void)
 {
-    int menu_principal, menu_objetos;
-    int menu_posicoes_quadro;
+    int menu_principal, menu_objetos, menu_cenario, menu_posicoes_quadro;
 
     menu_posicoes_quadro = glutCreateMenu(menu);
     glutAddMenuEntry("Parede da Esquerda", 2);
@@ -535,9 +649,16 @@ void cria_menu(void)
     glutAddMenuEntry("Cadeira", 1);
     glutAddMenuEntry("Mesa", 0);
 
+    menu_cenario = glutCreateMenu(menu);
+    glutAddMenuEntry("Chao", 6);
+    glutAddMenuEntry("Parede da Esquerda", 7);
+    glutAddMenuEntry("Parede da Direita", 8);
+    glutAddMenuEntry("Parede do Fundo", 9);
+
     menu_principal = glutCreateMenu(menu);
     glutAddSubMenu("Criar um novo objeto", menu_objetos);
-	glutAddMenuEntry("Reposicionar objeto", 5);
+    glutAddMenuEntry("Reposicionar objeto", 5);
+    glutAddSubMenu("Mostrar cenario", menu_cenario);
     glutAddMenuEntry("Sair", -1);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
@@ -614,7 +735,7 @@ static void draw(double trans1[3][4], double trans2[3][4], int posicao_do_objeto
     glTranslatef(x_relativo, y_relativo, z_relativo);
 
     //tentativa de máscara
-	//glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
     //glClearColor(0.0, 0.0, 0.0, 1.0);
     //glClear(GL_COLOR_BUFFER_BIT);
@@ -720,10 +841,10 @@ static void mainLoop(void)
 
             //if(i==6){printf("RECONHECEU SAMPLE 1!!! %d\n",marker_info->id);glRotatef(90,0,1,0);}
             //if(i==7){printf("RECONHECEU HIRO!!! %d\n",marker_info->id);}
-			//if(i==8){printf("RECONHECEU SAMPLE 2!!! %d\n",marker_info->id);}
+            //if(i==8){printf("RECONHECEU SAMPLE 2!!! %d\n",marker_info->id);}
             //if(i==9){printf("RECONHECEU KANJI!!! %d\n",marker_info->id);}
 
-            //desenha todos os objetos de maneira relativa ao marcador i
+            /** desenha todos os objetos de maneira relativa ao marcador i **/
             for (posicao_objeto = 0; posicao_objeto < contador_objetos; posicao_objeto++)
             {
                 glPushMatrix();
@@ -732,6 +853,8 @@ static void mainLoop(void)
 
                 glPopMatrix();
             }
+
+            /** desenha os cenarios que estão visiveis **/
         }
     }
 
@@ -783,8 +906,8 @@ static void init(void)
     posicao_default_parede_da_esquerda.z = 40;
 
     posicao_default_parede_da_direita.x = X_PAREDE_DA_DIREITA;
-    posicao_default_parede_da_esquerda.y = -100;
-    posicao_default_parede_da_esquerda.z = 40;
+    posicao_default_parede_da_direita.y = -100;
+    posicao_default_parede_da_direita.z = 40;
 
     posicao_default_parede_do_fundo.x = 137;
     posicao_default_parede_do_fundo.y = Y_PAREDE_DO_FUNDO;
