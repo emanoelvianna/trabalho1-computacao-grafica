@@ -11,8 +11,8 @@ OpenGL (https://www.opengl.org/)
 ### Resultados alcançados:
 
 ![GitHub Logo](Resultados/resultado1.jpg)
-![GitHub Logo](Resultados/resultado2.png)
-![GitHub Logo](Resultados/resultado3.png)
-![GitHub Logo](Resultados/resultado4.png)
+![GitHub Logo](Resultados/resultado2.jpg)
+![GitHub Logo](Resultados/resultado3.jpg)
+![GitHub Logo](Resultados/resultado4.jpg)
 
 
